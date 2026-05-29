@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoryForge 原型 - 首页/工作台</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; color: #333; }
+
+/* Header */
+.header { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 22px; font-weight: 700; color: #1a1a1a; }
+.logo span { color: #4f46e5; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; border: none; }
+.btn-primary { background: #4f46e5; color: #fff; }
+.btn-outline { background: transparent; border: 1px solid #d0d0d0; color: #555; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666; }
+
+/* Main Content */
+.main { max-width: 1200px; margin: 0 auto; padding: 32px; }
+
+/* Section Title */
+.section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.section-title .more { font-size: 13px; color: #888; font-weight: 400; cursor: pointer; }
+
+/* Quick Start */
+.quick-start { display: flex; gap: 16px; margin-bottom: 40px; }
+.quick-card { flex: 1; background: #fff; border-radius: 12px; padding: 24px; border: 1px solid #e8e8e8; cursor: pointer; transition: box-shadow 0.2s; }
+.quick-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.quick-card-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 12px; }
+.quick-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.quick-card p { font-size: 13px; color: #888; line-height: 1.5; }
+
+/* Works Grid */
+.works-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-bottom: 40px; }
+.work-card { background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e8e8e8; cursor: pointer; transition: box-shadow 0.2s; }
+.work-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.work-cover { height: 140px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 32px; }
+.work-cover.cover2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.work-cover.cover3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.work-info { padding: 16px; }
+.work-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.work-meta { font-size: 12px; color: #999; display: flex; align-items: center; gap: 8px; }
+.work-tag { display: inline-block; padding: 2px 8px; background: #f0f0f0; border-radius: 4px; font-size: 11px; color: #666; }
+.work-progress { margin-top: 10px; }
+.progress-bar { height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: #4f46e5; border-radius: 2px; }
+.progress-text { font-size: 11px; color: #999; margin-top: 4px; }
+
+/* Asset Recommendations */
+.assets-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.asset-card { min-width: 200px; background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #e8e8e8; }
+.asset-type { font-size: 11px; color: #4f46e5; background: #eef2ff; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+.asset-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.asset-desc { font-size: 12px; color: #888; line-height: 1.4; }
+.asset-footer { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; }
+.asset-author { font-size: 11px; color: #aaa; }
+.asset-downloads { font-size: 11px; color: #aaa; }
+
+/* Annotation */
+.annotation { position: absolute; background: #fffde7; border: 1px solid #ffd54f; padding: 6px 10px; border-radius: 6px; font-size: 11px; color: #666; max-width: 200px; line-height: 1.4; }
+.page-note { background: #fff3e0; border: 1px dashed #ff9800; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #e65100; margin-bottom: 24px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="page-note">
+  原型说明：这是首页/工作台的界面原型。用户登录后看到此页面。包含：快速开始入口、我的作品列表、社区推荐资产。
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">Story<span>Forge</span></div>
+  <div class="header-right">
+    <button class="btn btn-outline">资产市场</button>
+    <button class="btn btn-outline">我的收藏</button>
+    <div class="avatar">U</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Quick Start -->
+  <div class="section-title">快速开始</div>
+  <div class="quick-start">
+    <div class="quick-card">
+      <div class="quick-card-icon" style="background:#eef2ff;">+</div>
+      <h3>新建作品</h3>
+      <p>选择类型，输入作品名，开始你的创作之旅</p>
+    </div>
+    <div class="quick-card">
+      <div class="quick-card-icon" style="background:#f0fdf4;">T</div>
+      <h3>从模板开始</h3>
+      <p>使用预制模板，自带世界观和风格预设，快速上手</p>
+    </div>
+    <div class="quick-card">
+      <div class="quick-card-icon" style="background:#fef3c7;">?</div>
+      <h3>新手引导</h3>
+      <p>第一次使用？跟着引导体验完整创作流程</p>
+    </div>
+  </div>
+
+  <!-- My Works -->
+  <div class="section-title">我的作品 <span class="more">查看全部 ></span></div>
+  <div class="works-grid">
+    <div class="work-card">
+      <div class="work-cover">剑</div>
+      <div class="work-info">
+        <div class="work-title">长安夜雨</div>
+        <div class="work-meta">
+          <span class="work-tag">古风仙侠</span>
+          <span>最后编辑：2小时前</span>
+        </div>
+        <div class="work-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+          <div class="progress-text">4/10 章已完成 · 28,000字</div>
+        </div>
+      </div>
+    </div>
+    <div class="work-card">
+      <div class="work-cover cover2">心</div>
+      <div class="work-info">
+        <div class="work-title">城市边缘</div>
+        <div class="work-meta">
+          <span class="work-tag">现代都市</span>
+          <span>最后编辑：昨天</span>
+        </div>
+        <div class="work-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div>
+          <div class="progress-text">9/12 章已完成 · 65,000字</div>
+        </div>
+      </div>
+    </div>
+    <div class="work-card">
+      <div class="work-cover cover3">星</div>
+      <div class="work-info">
+        <div class="work-title">量子迷途</div>
+        <div class="work-meta">
+          <span class="work-tag">科幻未来</span>
+          <span>最后编辑：3天前</span>
+        </div>
+        <div class="work-progress">
+          <div class="progress-bar"><div class="progress-fill" style="width:15%"></div></div>
+          <div class="progress-text">2/15 章已完成 · 12,000字</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommended Assets -->
+  <div class="section-title">社区推荐资产 <span class="more">进入资产市场 ></span></div>
+  <div class="assets-row">
+    <div class="asset-card">
+      <span class="asset-type">世界观</span>
+      <div class="asset-name">赛博朋克2099</div>
+      <div class="asset-desc">完整的赛博朋克世界设定，含科技体系、社会结构、势力分布</div>
+      <div class="asset-footer">
+        <span class="asset-author">by 星河漫步</span>
+        <span class="asset-downloads">1.2k 次获取</span>
+      </div>
+    </div>
+    <div class="asset-card">
+      <span class="asset-type">角色卡</span>
+      <div class="asset-name">江湖侠客模板</div>
+      <div class="asset-desc">武侠世界通用角色模板，含性格、武功、门派设定</div>
+      <div class="asset-footer">
+        <span class="asset-author">by 剑客无名</span>
+        <span class="asset-downloads">890 次获取</span>
+      </div>
+    </div>
+    <div class="asset-card">
+      <span class="asset-type">风格预设</span>
+      <div class="asset-name">村上春树风</div>
+      <div class="asset-desc">孤独感、都市感、意识流，适合现代文学创作</div>
+      <div class="asset-footer">
+        <span class="asset-author">by 挪威的森林</span>
+        <span class="asset-downloads">2.1k 次获取</span>
+      </div>
+    </div>
+    <div class="asset-card">
+      <span class="asset-type">完整包</span>
+      <div class="asset-name">修仙世界全套</div>
+      <div class="asset-desc">含世界观+12个角色卡+仙侠风格预设，开箱即用</div>
+      <div class="asset-footer">
+        <span class="asset-author">by 太上道人</span>
+        <span class="asset-downloads">3.5k 次获取</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

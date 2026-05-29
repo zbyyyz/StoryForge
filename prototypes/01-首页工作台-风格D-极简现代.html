@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoryForge 原型 - 首页风格D（极简现代）</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background: #fff; color: #111; }
+
+.header { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 20px; font-weight: 800; color: #111; letter-spacing: -0.5px; }
+.header-right { display: flex; align-items: center; gap: 24px; }
+.nav-link { font-size: 14px; color: #666; text-decoration: none; cursor: pointer; }
+.nav-link:hover { color: #111; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: #111; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+
+.main { max-width: 1000px; margin: 0 auto; padding: 20px 40px 60px; }
+
+.hero { margin-bottom: 48px; padding: 48px 0; border-bottom: 1px solid #f0f0f0; }
+.hero h2 { font-size: 28px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px; }
+.hero p { font-size: 15px; color: #888; margin-bottom: 24px; }
+.hero-actions { display: flex; gap: 12px; }
+.btn-dark { padding: 10px 24px; background: #111; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 500; }
+.btn-dark:hover { background: #333; }
+.btn-ghost { padding: 10px 24px; background: transparent; color: #111; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; cursor: pointer; }
+.btn-ghost:hover { background: #f8f8f8; }
+
+.section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.section-title .more { font-size: 12px; color: #bbb; font-weight: 400; letter-spacing: 0; text-transform: none; cursor: pointer; }
+
+.works-list { margin-bottom: 48px; }
+.work-row { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+.work-row:hover { background: #fafafa; margin: 0 -16px; padding: 16px; border-radius: 8px; }
+.work-color { width: 4px; height: 40px; border-radius: 2px; margin-right: 16px; }
+.work-color.c1 { background: #6366f1; }
+.work-color.c2 { background: #ec4899; }
+.work-color.c3 { background: #06b6d4; }
+.work-main { flex: 1; }
+.work-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+.work-meta { font-size: 12px; color: #aaa; }
+.work-stats { text-align: right; }
+.work-stats-num { font-size: 14px; font-weight: 600; }
+.work-stats-label { font-size: 11px; color: #bbb; }
+
+.assets-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #f0f0f0; border-radius: 12px; overflow: hidden; }
+.asset-cell { background: #fff; padding: 20px; cursor: pointer; }
+.asset-cell:hover { background: #fafafa; }
+.asset-type { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #999; margin-bottom: 8px; }
+.asset-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.asset-desc { font-size: 12px; color: #999; line-height: 1.4; }
+.asset-meta { margin-top: 10px; font-size: 11px; color: #ccc; }
+
+.page-note { background: #f8f8f8; border: 1px dashed #ddd; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #666; margin: 16px 40px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="page-note">风格D：极简现代 — 大量留白、无彩色装饰、列表式布局、Apple风格的克制美学</div>
+
+<div class="header">
+  <div class="logo">StoryForge</div>
+  <div class="header-right">
+    <span class="nav-link">资产市场</span>
+    <span class="nav-link">我的收藏</span>
+    <div class="avatar">N</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="hero">
+    <h2>继续你的故事</h2>
+    <p>把脑中的画面变成文字，AI为你补齐笔力。</p>
+    <div class="hero-actions">
+      <button class="btn-dark">新建作品</button>
+      <button class="btn-ghost">从模板开始</button>
+    </div>
+  </div>
+
+  <div class="section-title">最近作品 <span class="more">全部作品</span></div>
+  <div class="works-list">
+    <div class="work-row">
+      <div class="work-color c1"></div>
+      <div class="work-main">
+        <div class="work-title">长安夜雨</div>
+        <div class="work-meta">古风仙侠 · 2小时前</div>
+      </div>
+      <div class="work-stats">
+        <div class="work-stats-num">4/10</div>
+        <div class="work-stats-label">28k字</div>
+      </div>
+    </div>
+    <div class="work-row">
+      <div class="work-color c2"></div>
+      <div class="work-main">
+        <div class="work-title">城市边缘</div>
+        <div class="work-meta">现代都市 · 昨天</div>
+      </div>
+      <div class="work-stats">
+        <div class="work-stats-num">9/12</div>
+        <div class="work-stats-label">65k字</div>
+      </div>
+    </div>
+    <div class="work-row">
+      <div class="work-color c3"></div>
+      <div class="work-main">
+        <div class="work-title">量子迷途</div>
+        <div class="work-meta">科幻未来 · 3天前</div>
+      </div>
+      <div class="work-stats">
+        <div class="work-stats-num">2/15</div>
+        <div class="work-stats-label">12k字</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">推荐资产 <span class="more">浏览全部</span></div>
+  <div class="assets-grid">
+    <div class="asset-cell">
+      <div class="asset-type">世界观</div>
+      <div class="asset-name">赛博朋克2099</div>
+      <div class="asset-desc">完整赛博朋克设定</div>
+      <div class="asset-meta">1.2k 获取</div>
+    </div>
+    <div class="asset-cell">
+      <div class="asset-type">风格预设</div>
+      <div class="asset-name">村上春树风</div>
+      <div class="asset-desc">孤独感、意识流</div>
+      <div class="asset-meta">2.1k 获取</div>
+    </div>
+    <div class="asset-cell">
+      <div class="asset-type">完整包</div>
+      <div class="asset-name">修仙世界全套</div>
+      <div class="asset-desc">世界观+角色+预设</div>
+      <div class="asset-meta">3.5k 获取</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

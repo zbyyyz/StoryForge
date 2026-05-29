@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoryForge 原型 - 新建作品流程</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background: #fff; color: #111; min-height: 100vh; }
+
+.header { padding: 20px 40px; display: flex; align-items: center; }
+.back { font-size: 14px; color: #888; cursor: pointer; margin-right: 16px; }
+.back:hover { color: #111; }
+.header-title { font-size: 15px; font-weight: 600; }
+
+.container { max-width: 720px; margin: 0 auto; padding: 40px; }
+
+/* Mode selection */
+.mode-select { margin-bottom: 48px; }
+.mode-select h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.mode-select p { font-size: 14px; color: #888; margin-bottom: 24px; }
+.mode-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.mode-card { padding: 28px 24px; border: 1px solid #eee; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.mode-card:hover { border-color: #ccc; background: #fafafa; }
+.mode-card.selected { border-color: #111; background: #f8f8f8; }
+.mode-card-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.mode-card-desc { font-size: 13px; color: #888; line-height: 1.5; }
+.mode-card-features { margin-top: 12px; }
+.mode-card-features li { font-size: 12px; color: #666; margin-bottom: 4px; list-style: none; }
+.mode-card-features li::before { content: "· "; color: #aaa; }
+
+/* Steps indicator */
+.steps { display: flex; align-items: center; margin-bottom: 48px; }
+.step { display: flex; align-items: center; gap: 8px; }
+.step-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; border: 2px solid #ddd; color: #aaa; }
+.step-num.active { border-color: #111; color: #111; background: #111; color: #fff; }
+.step-num.done { border-color: #111; background: #111; color: #fff; }
+.step-label { font-size: 13px; color: #aaa; }
+.step-label.active { color: #111; font-weight: 500; }
+.step-line { width: 40px; height: 1px; background: #ddd; margin: 0 12px; }
+.step-line.done { background: #111; }
+
+/* Form */
+.form-section { margin-bottom: 36px; }
+.form-label { font-size: 13px; font-weight: 600; color: #333; margin-bottom: 10px; display: block; }
+.form-hint { font-size: 12px; color: #999; margin-bottom: 10px; }
+
+.input-text { width: 100%; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s; }
+.input-text:focus { border-color: #111; }
+.input-textarea { width: 100%; padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none; resize: vertical; min-height: 120px; line-height: 1.6; transition: border-color 0.2s; }
+.input-textarea:focus { border-color: #111; }
+
+/* Type selection */
+.type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.type-card { padding: 16px 12px; border: 1px solid #eee; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
+.type-card:hover { border-color: #ccc; background: #fafafa; }
+.type-card.selected { border-color: #111; background: #f5f5f5; }
+.type-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+.type-icon svg { width: 28px; height: 28px; stroke: #555; stroke-width: 1.5; fill: none; }
+.type-name { font-size: 13px; font-weight: 500; }
+
+/* Buttons */
+.form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 48px; padding-top: 24px; border-top: 1px solid #f0f0f0; }
+.btn { padding: 10px 24px; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 500; border: none; }
+.btn-dark { background: #111; color: #fff; }
+.btn-dark:hover { background: #333; }
+.btn-ghost { background: transparent; color: #888; border: 1px solid #e0e0e0; }
+.btn-ghost:hover { background: #f8f8f8; }
+.btn-link { background: none; border: none; color: #888; font-size: 13px; cursor: pointer; }
+.btn-link:hover { color: #111; }
+
+/* Optional section */
+.optional-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px; }
+.optional-toggle span { font-size: 13px; color: #888; }
+.optional-toggle .arrow { font-size: 11px; color: #aaa; transition: transform 0.2s; }
+.optional-toggle .arrow.open { transform: rotate(90deg); }
+.optional-content { display: none; }
+.optional-content.visible { display: block; }
+
+/* Page states */
+.page { display: none; }
+.page.active { display: block; }
+
+/* AI suggestion preview */
+.ai-suggestion { background: #f8f8f8; border: 1px solid #eee; border-radius: 10px; padding: 16px; margin-top: 16px; }
+.ai-suggestion-header { font-size: 12px; color: #888; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.ai-suggestion-content { font-size: 13px; line-height: 1.8; color: #444; }
+.chapter-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: baseline; gap: 8px; }
+.chapter-item:last-child { border-bottom: none; }
+.chapter-num { font-size: 12px; color: #aaa; min-width: 40px; }
+.chapter-title { font-size: 13px; color: #333; }
+.chapter-desc { font-size: 12px; color: #999; margin-top: 2px; }
+
+/* Advanced mode */
+.adv-section { margin-bottom: 32px; }
+.adv-section-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.adv-section-title .add-btn { font-size: 12px; color: #888; cursor: pointer; border: 1px solid #ddd; padding: 4px 10px; border-radius: 6px; }
+.adv-section-title .add-btn:hover { background: #f5f5f5; }
+.preset-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.preset-chip { padding: 6px 14px; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+.preset-chip:hover { border-color: #aaa; }
+.preset-chip.selected { border-color: #111; background: #111; color: #fff; }
+.char-card-mini { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid #eee; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
+.char-card-mini:hover { border-color: #ccc; }
+.char-card-mini .char-avatar { width: 32px; height: 32px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.char-card-mini .char-info { flex: 1; }
+.char-card-mini .char-name { font-size: 13px; font-weight: 600; }
+.char-card-mini .char-desc { font-size: 11px; color: #999; }
+.world-summary { padding: 14px 16px; border: 1px solid #eee; border-radius: 10px; font-size: 13px; color: #555; line-height: 1.6; }
+.world-summary .world-label { font-size: 11px; color: #aaa; margin-bottom: 4px; }
+.import-hint { font-size: 12px; color: #aaa; margin-top: 8px; }
+.import-hint a { color: #666; text-decoration: underline; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <span class="back" onclick="goBack()">← 返回</span>
+  <span class="header-title">新建作品</span>
+</div>
+
+<!-- Mode Selection (Entry) -->
+<div class="container">
+  <div class="page active" id="page0">
+    <div class="mode-select">
+      <h2>开始新作品</h2>
+      <p>选择适合你的创作方式</p>
+      <div class="mode-cards">
+        <div class="mode-card selected" id="modeGuided" onclick="selectMode('guided')">
+          <div class="mode-card-title">引导模式</div>
+          <div class="mode-card-desc">适合新手或快速开始，跟着步骤走</div>
+          <ul class="mode-card-features">
+            <li>选择故事类型</li>
+            <li>自动加载对应预设</li>
+            <li>AI帮你规划章节</li>
+          </ul>
+        </div>
+        <div class="mode-card" id="modeAdvanced" onclick="selectMode('advanced')">
+          <div class="mode-card-title">自定义模式</div>
+          <div class="mode-card-desc">适合有明确想法的创作者，自由配置一切</div>
+          <ul class="mode-card-features">
+            <li>手动选择/创建风格预设</li>
+            <li>自定义世界观设定</li>
+            <li>预先创建角色卡</li>
+            <li>从收藏导入资产</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <span></span>
+      <button class="btn btn-dark" onclick="enterMode()">继续</button>
+    </div>
+  </div>
+
+  <!-- Guided Mode: Step 1 -->
+  <div class="page" id="page1">
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step"><div class="step-num active">1</div><span class="step-label active">选择类型</span></div>
+      <div class="step-line"></div>
+      <div class="step"><div class="step-num">2</div><span class="step-label">基本信息</span></div>
+      <div class="step-line"></div>
+      <div class="step"><div class="step-num">3</div><span class="step-label">故事构思</span></div>
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">你想写什么类型的故事？</label>
+      <div class="form-hint">选择一个类型，我们会为你加载对应的世界观和风格预设</div>
+      <div class="type-grid">
+        <div class="type-card selected" onclick="selectType(this)">
+          <div class="type-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M13 21V3l6 4v14M9 9v.01M9 13v.01M9 17v.01M17 9v.01M17 13v.01"/></svg></div>
+          <div class="type-name">现代都市</div>
+        </div>
+        <div class="type-card" onclick="selectType(this)">
+          <div class="type-icon"><svg viewBox="0 0 24 24"><path d="M3 18c3-2 5-4 7-4s4 1 6 2c2 1 4 0 5-1"/><path d="M5 14c2-2 4-3 6-3s4 1 5 2c2 1 4 0 5-1"/><path d="M7 10c2-1.5 3-2.5 5-2.5s3.5 1 5 2c1.5.8 3 .5 4-.5"/></svg></div>
+          <div class="type-name">古风仙侠</div>
+        </div>
+        <div class="type-card" onclick="selectType(this)">
+          <div class="type-icon"><svg viewBox="0 0 24 24"><path d="M12 3l1.5 4.5H18l-3.5 2.5L16 14.5 12 12l-4 2.5 1.5-4.5L6 7.5h4.5z"/><circle cx="12" cy="19" r="2"/><path d="M12 14v3"/></svg></div>
+          <div class="type-name">西方奇幻</div>
+        </div>
+        <div class="type-card" onclick="selectType(this)">
+          <div class="type-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
+          <div class="type-name">科幻未来</div>
+        </div>
+        <div class="type-card" onclick="selectType(this)">
+          <div class="type-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h5"/></svg></div>
+          <div class="type-name">校园青春</div>
+        </div>
+        <div class="type-card" onclick="selectType(this)">
+          <div class="type-icon"><svg viewBox="0 0 24 24"><path d="M10.5 2h3v1.5c0 .5.5 1 1 1.5s1.5 1.5 2 3c.5 1.5.5 3.5.5 5.5s-.5 4-1.5 5.5c-.7 1-1 1.5-1 2v1H9.5v-1c0-.5-.3-1-1-2-1-1.5-1.5-3.5-1.5-5.5s0-4 .5-5.5c.5-1.5 1.5-2.5 2-3s1-1 1-1.5V2z"/></svg></div>
+          <div class="type-name">历史架空</div>
+        </div>
+        <div class="type-card" onclick="selectType(this)">
+          <div class="type-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg></div>
+          <div class="type-name">悬疑推理</div>
+        </div>
+        <div class="type-card" onclick="selectType(this)">
+          <div class="type-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <div class="type-name">自由创作</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <span></span>
+      <button class="btn btn-dark" onclick="showPage(2)">下一步</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Basic Info -->
+  <div class="page" id="page2">
+    <div class="steps">
+      <div class="step"><div class="step-num done">✓</div><span class="step-label">选择类型</span></div>
+      <div class="step-line done"></div>
+      <div class="step"><div class="step-num active">2</div><span class="step-label active">基本信息</span></div>
+      <div class="step-line"></div>
+      <div class="step"><div class="step-num">3</div><span class="step-label">故事构思</span></div>
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">作品名称</label>
+      <input class="input-text" type="text" placeholder="给你的故事起个名字" value="城市边缘">
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">一句话简介</label>
+      <div class="form-hint">用一句话描述你的故事核心，帮助AI理解你的创作方向</div>
+      <input class="input-text" type="text" placeholder="例如：一个程序员在深夜加班时发现公司的秘密" value="一个外卖骑手在送餐途中意外卷入一场城市阴谋">
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="showPage(1)">上一步</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-link" onclick="skipToCreate()">跳过，直接开始创作</button>
+        <button class="btn btn-dark" onclick="showPage(3)">下一步</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Story Outline (Optional) -->
+  <div class="page" id="page3">
+    <div class="steps">
+      <div class="step"><div class="step-num done">✓</div><span class="step-label">选择类型</span></div>
+      <div class="step-line done"></div>
+      <div class="step"><div class="step-num done">✓</div><span class="step-label">基本信息</span></div>
+      <div class="step-line done"></div>
+      <div class="step"><div class="step-num active">3</div><span class="step-label active">故事构思</span></div>
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">整体故事梗概（可选）</label>
+      <div class="form-hint">大致描述你的故事从开始到结束的走向，AI会帮你建议章节划分。不写也可以直接开始。</div>
+      <textarea class="input-textarea" placeholder="例如：外卖骑手小陈在一次深夜送餐中，被送到一个废弃仓库。他目睹了一场交易，被人发现后开始被追杀。在逃亡过程中，他发现这场阴谋涉及城市的地下势力和一位政客。最终他在一个记者的帮助下揭露了真相……">外卖骑手小陈在一次深夜送餐中，被送到一个废弃仓库。他目睹了一场交易，被人发现后开始被追杀。在逃亡过程中，他发现这场阴谋涉及城市的地下势力和一位政客。最终他在一个记者的帮助下揭露了真相，但也付出了代价。</textarea>
+    </div>
+
+    <button class="btn btn-dark" onclick="showAISuggestion()" style="margin-bottom:16px;">让AI帮我规划章节</button>
+
+    <!-- AI Chapter Suggestion -->
+    <div class="ai-suggestion" id="aiSuggestion" style="display:none;">
+      <div class="ai-suggestion-header">
+        <span>✦</span> AI建议的章节划分（可调整）
+      </div>
+      <div class="ai-suggestion-content">
+        <div class="chapter-item">
+          <span class="chapter-num">第一章</span>
+          <div>
+            <div class="chapter-title">深夜订单</div>
+            <div class="chapter-desc">小陈接到一个异常的深夜订单，送往城市边缘的废弃仓库</div>
+          </div>
+        </div>
+        <div class="chapter-item">
+          <span class="chapter-num">第二章</span>
+          <div>
+            <div class="chapter-title">目击</div>
+            <div class="chapter-desc">在仓库中意外目睹一场地下交易，被发现后仓皇逃离</div>
+          </div>
+        </div>
+        <div class="chapter-item">
+          <span class="chapter-num">第三章</span>
+          <div>
+            <div class="chapter-title">追杀</div>
+            <div class="chapter-desc">小陈发现自己被跟踪，日常生活被打破，开始逃亡</div>
+          </div>
+        </div>
+        <div class="chapter-item">
+          <span class="chapter-num">第四章</span>
+          <div>
+            <div class="chapter-title">线索</div>
+            <div class="chapter-desc">逃亡中偶然发现阴谋的更多线索，牵涉到一位知名政客</div>
+          </div>
+        </div>
+        <div class="chapter-item">
+          <span class="chapter-num">第五章</span>
+          <div>
+            <div class="chapter-title">同盟</div>
+            <div class="chapter-desc">遇到调查记者林薇，两人决定联手揭露真相</div>
+          </div>
+        </div>
+        <div class="chapter-item">
+          <span class="chapter-num">第六章</span>
+          <div>
+            <div class="chapter-title">真相</div>
+            <div class="chapter-desc">最终对决，真相大白，但小陈也为此付出了代价</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="showPage(2)">上一步</button>
+      <button class="btn btn-dark" onclick="finishCreate()">确认，开始创作</button>
+    </div>
+  </div>
+
+  <!-- Advanced Mode -->
+  <div class="page" id="pageAdv">
+    <div class="form-section">
+      <label class="form-label">作品名称</label>
+      <input class="input-text" type="text" placeholder="给你的故事起个名字">
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">一句话简介</label>
+      <input class="input-text" type="text" placeholder="用一句话描述你的故事核心">
+    </div>
+
+    <div class="adv-section">
+      <div class="adv-section-title">
+        风格预设
+        <span class="add-btn" onclick="alert('打开风格预设创建/编辑面板')">+ 新建预设</span>
+      </div>
+      <div class="preset-list">
+        <div class="preset-chip selected" onclick="toggleChip(this)">金庸武侠</div>
+        <div class="preset-chip" onclick="toggleChip(this)">余华冷叙事</div>
+        <div class="preset-chip" onclick="toggleChip(this)">日系轻小说</div>
+        <div class="preset-chip" onclick="toggleChip(this)">古风言情</div>
+        <div class="preset-chip" onclick="toggleChip(this)">现代都市</div>
+        <div class="preset-chip" onclick="toggleChip(this)">村上春树风</div>
+      </div>
+      <div class="import-hint">或 <a onclick="alert('从我的收藏导入风格预设')">从收藏导入</a></div>
+    </div>
+
+    <div class="adv-section">
+      <div class="adv-section-title">
+        世界观设定
+        <span class="add-btn" onclick="alert('打开世界观编辑面板')">+ 自定义世界观</span>
+      </div>
+      <div class="world-summary">
+        <div class="world-label">当前选择</div>
+        武侠江湖 — 宋朝末年，朝廷腐败，江湖门派林立。武功体系以内力为基础，分为正邪两道。主要势力：少林、武当、明教、朝廷锦衣卫。
+      </div>
+      <div class="import-hint">或 <a onclick="alert('从我的收藏导入世界观')">从收藏导入</a> · <a onclick="alert('从空白创建世界观')">从空白创建</a></div>
+    </div>
+
+    <div class="adv-section">
+      <div class="adv-section-title">
+        角色卡
+        <span class="add-btn" onclick="alert('打开角色卡创建面板')">+ 新建角色</span>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <div class="char-card-mini">
+          <div class="char-avatar">陈</div>
+          <div class="char-info">
+            <div class="char-name">陈长风</div>
+            <div class="char-desc">落魄剑客，性格孤傲，背负血仇</div>
+          </div>
+        </div>
+        <div class="char-card-mini">
+          <div class="char-avatar">苏</div>
+          <div class="char-info">
+            <div class="char-name">苏晚晴</div>
+            <div class="char-desc">医女，温柔聪慧，暗藏心事</div>
+          </div>
+        </div>
+        <div class="char-card-mini" style="border-style:dashed; color:#aaa;" onclick="alert('添加角色')">
+          <div class="char-avatar" style="background:transparent; border:1px dashed #ddd;">+</div>
+          <div class="char-info">
+            <div class="char-name" style="color:#aaa;">添加更多角色</div>
+          </div>
+        </div>
+      </div>
+      <div class="import-hint">或 <a onclick="alert('从我的收藏导入角色卡')">从收藏导入</a></div>
+    </div>
+
+    <div class="adv-section">
+      <div class="adv-section-title">章节规划（可选）</div>
+      <div class="form-hint" style="margin-top:-8px;">可以先不规划，进入创作后随时添加章节</div>
+      <textarea class="input-textarea" placeholder="可以在这里写下你的章节规划，或留空后续再添加" style="min-height:80px;"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="showPage(0)">返回</button>
+      <button class="btn btn-dark" onclick="finishCreate()">创建作品，开始创作</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let currentMode = 'guided';
+
+function selectMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeGuided').classList.toggle('selected', mode === 'guided');
+  document.getElementById('modeAdvanced').classList.toggle('selected', mode === 'advanced');
+}
+
+function enterMode() {
+  if (currentMode === 'guided') {
+    showPage(1);
+  } else {
+    showPage('Adv');
+  }
+}
+
+function selectType(el) {
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function toggleChip(el) {
+  document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function showPage(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page' + n).classList.add('active');
+}
+
+function showAISuggestion() {
+  document.getElementById('aiSuggestion').style.display = 'block';
+}
+
+function skipToCreate() {
+  alert('跳转到创作工作区（原型演示）');
+}
+
+function finishCreate() {
+  alert('作品创建成功！跳转到作品管理页（原型演示）');
+}
+
+function goBack() {
+  showPage(0);
+}
+</script>
+</body>
+</html>
