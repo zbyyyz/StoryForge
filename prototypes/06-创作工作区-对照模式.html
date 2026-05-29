@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoryForge 原型 - 创作工作区（对照模式）</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background: #fff; color: #111; min-height: 100vh; display: flex; }
+
+.sidebar { width: 280px; border-right: 1px solid #f0f0f0; display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid #f0f0f0; }
+.sidebar-back { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 12px; display: block; }
+.sidebar-back:hover { color: #111; }
+.sidebar-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.sidebar-meta { font-size: 12px; color: #aaa; }
+.chapter-list { flex: 1; overflow-y: auto; padding: 12px; }
+.chapter-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #bbb; padding: 8px 12px; }
+.chapter-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.chapter-item:hover { background: #f8f8f8; }
+.chapter-item.active { background: #f0f0f0; }
+.chapter-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.chapter-status.empty { border: 1.5px solid #ddd; }
+.chapter-status.skeleton { background: #fbbf24; }
+.chapter-status.expanded { background: #34d399; }
+.chapter-status.done { background: #111; }
+.chapter-info { flex: 1; min-width: 0; }
+.chapter-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chapter-words { font-size: 11px; color: #bbb; }
+
+.workspace { margin-left: 280px; flex: 1; display: flex; flex-direction: column; height: 100vh; }
+.topbar { padding: 12px 32px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+.chapter-title-input { font-size: 15px; font-weight: 600; border: none; outline: none; background: transparent; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.topbar-btn { padding: 6px 12px; font-size: 12px; border: 1px solid #eee; border-radius: 6px; cursor: pointer; background: #fff; }
+.topbar-btn.active { background: #111; color: #fff; border-color: #111; }
+.topbar-btn:hover { border-color: #ccc; }
+.word-count { font-size: 12px; color: #bbb; }
+
+/* 对照模式核心布局 */
+.compare-wrap { flex: 1; display: flex; overflow: hidden; }
+.compare-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.compare-pane + .compare-pane { border-left: 1px solid #f0f0f0; }
+.pane-header { padding: 10px 24px; border-bottom: 1px solid #f0f0f0; background: #fafafa; display: flex; align-items: center; justify-content: space-between; }
+.pane-label { font-size: 12px; font-weight: 600; color: #888; }
+.pane-word-count { font-size: 11px; color: #bbb; }
+.pane-content { flex: 1; padding: 32px 28px; overflow-y: auto; font-size: 14px; line-height: 2; color: #333; }
+.pane-content p { margin-bottom: 14px; }
+.pane-content.skeleton-side { background: #fffdf7; }
+.pane-content.result-side { background: #fff; }
+
+/* 对应段落高亮 */
+.pane-content p:hover { background: #f0f7ff; border-radius: 4px; margin-left: -4px; margin-right: -4px; padding-left: 4px; padding-right: 4px; }
+.pane-content p.highlight { background: #e8f0fe; border-radius: 4px; margin-left: -4px; margin-right: -4px; padding-left: 4px; padding-right: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-back">&larr; 返回总览</span>
+    <div class="sidebar-title">城市边缘</div>
+    <div class="sidebar-meta">现代都市 · 悬疑推理</div>
+  </div>
+  <div class="chapter-section-title">章节</div>
+  <div class="chapter-list">
+    <div class="chapter-item">
+      <div class="chapter-status done"></div>
+      <div class="chapter-info"><div class="chapter-name">第一章：深夜订单</div><div class="chapter-words">3,200字</div></div>
+    </div>
+    <div class="chapter-item">
+      <div class="chapter-status done"></div>
+      <div class="chapter-info"><div class="chapter-name">第二章：目击</div><div class="chapter-words">4,100字</div></div>
+    </div>
+    <div class="chapter-item">
+      <div class="chapter-status expanded"></div>
+      <div class="chapter-info"><div class="chapter-name">第三章：追杀</div><div class="chapter-words">2,800字</div></div>
+    </div>
+    <div class="chapter-item active">
+      <div class="chapter-status expanded"></div>
+      <div class="chapter-info"><div class="chapter-name">第四章：线索</div><div class="chapter-words">1,420字</div></div>
+    </div>
+    <div class="chapter-item">
+      <div class="chapter-status empty"></div>
+      <div class="chapter-info"><div class="chapter-name">第五章：同盟</div><div class="chapter-words">未开始</div></div>
+    </div>
+    <div class="chapter-item">
+      <div class="chapter-status empty"></div>
+      <div class="chapter-info"><div class="chapter-name">第六章：真相</div><div class="chapter-words">未开始</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Workspace -->
+<div class="workspace">
+  <div class="topbar">
+    <div class="topbar-left">
+      <input class="chapter-title-input" value="第四章：线索" />
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn active">对照模式</button>
+      <button class="topbar-btn">退出对照</button>
+      <span class="word-count">骨架 286字 → 成文 1,420字</span>
+    </div>
+  </div>
+
+  <div class="compare-wrap">
+    <!-- 左侧：骨架 -->
+    <div class="compare-pane">
+      <div class="pane-header">
+        <span class="pane-label">骨架</span>
+        <span class="pane-word-count">286字</span>
+      </div>
+      <div class="pane-content skeleton-side" id="skeletonPane">
+        <p data-idx="0">陈默回到出租屋，反复回想追杀过程中那个人喊出的名字——"周远"。他打开手机搜索，发现周远是本市一家物流公司的老板，三个月前因为一起交通事故上过本地新闻。</p>
+        <p data-idx="1">他犹豫要不要报警。但追杀他的人明显训练有素，如果对方有背景，报警可能反而暴露自己。他决定先自己查一查。</p>
+        <p data-idx="2">第二天送餐时，他特意绕路经过那家物流公司。公司外表普通，但他注意到停车场有几辆挂着外地牌照的黑色商务车。</p>
+        <p data-idx="3">晚上回家，门口放着一个没有署名的快递盒。打开后里面是一部新手机和一张纸条："别查了，这是你的补偿。"手机里预存了五万块的转账记录。</p>
+      </div>
+    </div>
+
+    <!-- 右侧：成文 -->
+    <div class="compare-pane">
+      <div class="pane-header">
+        <span class="pane-label">成文</span>
+        <span class="pane-word-count">1,420字</span>
+      </div>
+      <div class="pane-content result-side" id="resultPane">
+        <p data-idx="0">陈默把电动车停在楼下，摘下头盔时手还在微微发抖。他没有走正门，而是绕到侧面的消防通道，确认身后没有人跟着，才快步上了楼。</p>
+        <p data-idx="0">出租屋里一片漆黑。他没有开灯，靠着门坐在地上，大口喘着气。窗外霓虹灯的光透过薄窗帘打进来，在对面墙上投下忽明忽暗的色块。</p>
+        <p data-idx="0">那个名字在他脑子里反复回响——"周远"。追杀他的人在混乱中喊出的那两个字，像一把钥匙，指向某个他还看不清全貌的房间。</p>
+        <p data-idx="0">他掏出手机，手指在搜索框里打下"周远"两个字。屏幕的蓝光照亮他紧绷的脸。搜索结果很快出来了：周远，四十三岁，鼎盛物流有限公司法人代表。三个月前，一辆挂着公司名的货车在城南高架发生追尾事故，司机当场死亡。新闻配图里，他穿着深色西装，表情平静得近乎冷漠。</p>
+        <p data-idx="1">陈默盯着那张脸看了很久。这就是那些人要保护的人？一个物流公司老板，值得派出训练有素的打手灭口？</p>
+        <p data-idx="1">他想过报警。但那些人的身手、那些人的装备、那些人追杀时的从容——这不是普通的黑社会。如果周远背后有更大的东西，报警可能只是把自己送到明面上。</p>
+        <p data-idx="1">他决定先自己查。</p>
+        <p data-idx="2">第二天中午，他接了一单送往城东工业区的外卖。他特意选了这一单——鼎盛物流的总部就在那片区域。骑车经过时，他放慢了速度。</p>
+        <p data-idx="2">公司大楼外表普通，灰色的六层建筑，门口挂着褪色的招牌。但停车场里停着四辆黑色别克商务车，清一色的外地牌照，车窗贴着深色膜，看不见里面。</p>
+        <p data-idx="2">一个物流公司，需要这么多外地来的商务车？</p>
+        <p data-idx="3">晚上九点多，陈默拖着疲惫的身体回到出租屋。走到门口时，他停住了。门前的地垫上放着一个快递盒，没有寄件人信息，收件人写着"陈先生"。</p>
+        <p data-idx="3">他蹲下来看了很久，没有马上碰它。最终他还是把盒子拿进了屋里，用水果刀小心地划开封条。</p>
+        <p data-idx="3">里面是一部全新的手机，还有一张折叠的纸条。纸条上只有一行字，打印体，没有签名："别查了，这是你的补偿。"</p>
+        <p data-idx="3">他打开手机。屏幕亮起来，没有锁屏密码。只有一条银行转账通知：收到转账50,000元。</p>
+        <p data-idx="3">陈默握着手机坐在床边，很长时间没有动。五万块。这是他骑半年外卖才能挣到的数字。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const skeletonPane = document.getElementById('skeletonPane');
+const resultPane = document.getElementById('resultPane');
+
+function clearHighlights() {
+  document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+}
+
+function highlightByIdx(idx) {
+  clearHighlights();
+  document.querySelectorAll('[data-idx="' + idx + '"]').forEach(el => el.classList.add('highlight'));
+}
+
+[skeletonPane, resultPane].forEach(pane => {
+  pane.addEventListener('mouseover', function(e) {
+    const p = e.target.closest('p[data-idx]');
+    if (p) highlightByIdx(p.getAttribute('data-idx'));
+  });
+  pane.addEventListener('mouseleave', clearHighlights);
+});
+</script>
+</body>
+</html>
