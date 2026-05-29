@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoryForge 原型 - 创作工作区（含灵感建议）</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; background: #fff; color: #111; min-height: 100vh; display: flex; }
+
+.sidebar { width: 280px; border-right: 1px solid #f0f0f0; display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; }
+.sidebar-header { padding: 20px; border-bottom: 1px solid #f0f0f0; }
+.sidebar-back { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 12px; display: block; }
+.sidebar-back:hover { color: #111; }
+.sidebar-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.sidebar-meta { font-size: 12px; color: #aaa; }
+
+.chapter-list { flex: 1; overflow-y: auto; padding: 12px; }
+.chapter-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #bbb; padding: 8px 12px; }
+.chapter-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.chapter-item:hover { background: #f8f8f8; }
+.chapter-item.active { background: #f0f0f0; }
+.chapter-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.chapter-status.empty { border: 1.5px solid #ddd; }
+.chapter-status.skeleton { background: #fbbf24; }
+.chapter-status.expanded { background: #34d399; }
+.chapter-status.done { background: #111; }
+.chapter-info { flex: 1; min-width: 0; }
+.chapter-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chapter-words { font-size: 11px; color: #bbb; }
+
+.workspace { margin-left: 280px; flex: 1; display: flex; flex-direction: column; height: 100vh; }
+
+.topbar { padding: 12px 32px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+.topbar-left { display: flex; align-items: center; gap: 16px; }
+.chapter-title-input { font-size: 15px; font-weight: 600; border: none; outline: none; background: transparent; }
+.view-toggle { display: flex; background: #f5f5f5; border-radius: 6px; padding: 2px; }
+.view-btn { padding: 6px 14px; font-size: 12px; border-radius: 5px; cursor: pointer; color: #888; border: none; background: transparent; }
+.view-btn.active { background: #fff; color: #111; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.topbar-btn { padding: 6px 12px; font-size: 12px; color: #888; border: 1px solid #eee; border-radius: 6px; cursor: pointer; background: #fff; }
+.topbar-btn:hover { border-color: #ccc; }
+
+.editor-wrap { flex: 1; display: flex; overflow: hidden; }
+.editor-main { flex: 1; display: flex; flex-direction: column; }
+.editor-content { flex: 1; padding: 40px 60px; overflow-y: auto; max-width: 720px; margin: 0 auto; width: 100%; }
+.editor-text { font-size: 15px; line-height: 2; color: #333; outline: none; }
+.editor-text p { margin-bottom: 16px; }
+
+.bottom-bar { padding: 16px 32px; border-top: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; }
+.bottom-left { display: flex; align-items: center; gap: 16px; }
+.detail-level { display: flex; align-items: center; gap: 8px; }
+.detail-label { font-size: 12px; color: #888; }
+.detail-options { display: flex; gap: 4px; }
+.detail-opt { padding: 5px 12px; font-size: 12px; border-radius: 4px; cursor: pointer; border: 1px solid #eee; background: #fff; color: #888; }
+.detail-opt.active { background: #111; color: #fff; border-color: #111; }
+.style-select { padding: 5px 12px; font-size: 12px; border: 1px solid #eee; border-radius: 4px; color: #888; background: #fff; cursor: pointer; }
+.bottom-right { display: flex; align-items: center; gap: 10px; }
+.inspire-btn { padding: 10px 20px; background: #fff; color: #111; border: 1.5px solid #111; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.inspire-btn:hover { background: #f8f8f8; }
+.inspire-btn .icon { font-size: 16px; }
+.expand-btn { padding: 10px 24px; background: #111; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.expand-btn:hover { background: #333; }
+.word-count { font-size: 12px; color: #bbb; }
+
+.side-panel { width: 240px; border-left: 1px solid #f0f0f0; padding: 20px; overflow-y: auto; }
+.panel-section { margin-bottom: 24px; }
+.panel-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #bbb; margin-bottom: 10px; }
+.panel-card { padding: 10px 12px; background: #f9f9f9; border-radius: 8px; margin-bottom: 8px; }
+.panel-card-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+.panel-card-desc { font-size: 11px; color: #999; }
+.panel-tag { display: inline-block; padding: 3px 8px; background: #f0f0f0; border-radius: 4px; font-size: 11px; color: #888; margin-right: 4px; margin-bottom: 4px; }
+
+/* 灵感建议面板 */
+.inspire-panel { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); margin-left: 140px; width: 520px; background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); padding: 20px; z-index: 100; animation: slideUp 0.2s ease; }
+@keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+.inspire-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.inspire-title { font-size: 14px; font-weight: 600; }
+.inspire-close { width: 24px; height: 24px; border-radius: 4px; border: none; background: #f5f5f5; cursor: pointer; font-size: 14px; color: #888; display: flex; align-items: center; justify-content: center; }
+.inspire-close:hover { background: #eee; }
+.inspire-hint { font-size: 12px; color: #999; margin-bottom: 12px; }
+.inspire-option { padding: 12px 14px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.inspire-option:hover { border-color: #111; background: #fafafa; }
+.inspire-option:last-child { margin-bottom: 0; }
+.inspire-option-text { font-size: 13px; line-height: 1.6; color: #333; }
+.inspire-option-tag { display: inline-block; font-size: 11px; color: #999; background: #f5f5f5; padding: 2px 6px; border-radius: 3px; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-back">&larr; 返回总览</span>
+    <div class="sidebar-title">城市边缘</div>
+    <div class="sidebar-meta">现代都市 · 悬疑推理</div>
+  </div>
+  <div class="chapter-section-title">章节</div>
+  <div class="chapter-list">
+    <div class="chapter-item">
+      <div class="chapter-status done"></div>
+      <div class="chapter-info"><div class="chapter-name">第一章：深夜订单</div><div class="chapter-words">3,200字</div></div>
+    </div>
+    <div class="chapter-item">
+      <div class="chapter-status done"></div>
+      <div class="chapter-info"><div class="chapter-name">第二章：目击</div><div class="chapter-words">4,100字</div></div>
+    </div>
+    <div class="chapter-item">
+      <div class="chapter-status expanded"></div>
+      <div class="chapter-info"><div class="chapter-name">第三章：追杀</div><div class="chapter-words">2,800字</div></div>
+    </div>
+    <div class="chapter-item active">
+      <div class="chapter-status skeleton"></div>
+      <div class="chapter-info"><div class="chapter-name">第四章：线索</div><div class="chapter-words">骨架已写</div></div>
+    </div>
+    <div class="chapter-item">
+      <div class="chapter-status empty"></div>
+      <div class="chapter-info"><div class="chapter-name">第五章：同盟</div><div class="chapter-words">未开始</div></div>
+    </div>
+    <div class="chapter-item">
+      <div class="chapter-status empty"></div>
+      <div class="chapter-info"><div class="chapter-name">第六章：真相</div><div class="chapter-words">未开始</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Workspace -->
+<div class="workspace">
+  <div class="topbar">
+    <div class="topbar-left">
+      <input class="chapter-title-input" value="第四章：线索" />
+      <div class="view-toggle">
+        <button class="view-btn active">骨架</button>
+        <button class="view-btn">成文</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn">对照模式</button>
+      <span class="word-count">骨架 286字</span>
+    </div>
+  </div>
+
+  <div class="editor-wrap">
+    <div class="editor-main">
+      <div class="editor-content">
+        <div class="editor-text" contenteditable="true">
+          <p>陈默回到出租屋，反复回想追杀过程中那个人喊出的名字——"周远"。他打开手机搜索，发现周远是本市一家物流公司的老板，三个月前因为一起交通事故上过本地新闻。</p>
+          <p>他犹豫要不要报警。但追杀他的人明显训练有素，如果对方有背景，报警可能反而暴露自己。他决定先自己查一查。</p>
+          <p>第二天送餐时，他特意绕路经过那家物流公司。公司外表普通，但他注意到停车场有几辆挂着外地牌照的黑色商务车。</p>
+          <p>晚上回家，门口放着一个没有署名的快递盒。打开后里面是一部新手机和一张纸条："别查了，这是你的补偿。"手机里预存了五万块的转账记录。</p>
+        </div>
+      </div>
+
+      <div class="bottom-bar">
+        <div class="bottom-left">
+          <div class="detail-level">
+            <span class="detail-label">详细程度</span>
+            <div class="detail-options">
+              <button class="detail-opt">简洁</button>
+              <button class="detail-opt active">适中</button>
+              <button class="detail-opt">细腻</button>
+            </div>
+          </div>
+          <select class="style-select">
+            <option>默认风格</option>
+            <option>余华冷叙事</option>
+            <option>日系轻小说</option>
+            <option>硬汉派推理</option>
+          </select>
+        </div>
+        <div class="bottom-right">
+          <button class="inspire-btn" onclick="toggleInspire()"><span class="icon">💡</span> 灵感</button>
+          <button class="expand-btn">扩写本章</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side panel -->
+    <div class="side-panel">
+      <div class="panel-section">
+        <div class="panel-title">本章角色</div>
+        <div class="panel-card"><div class="panel-card-name">陈默</div><div class="panel-card-desc">外卖骑手，28岁，沉默寡言</div></div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-title">场景</div>
+        <div class="panel-tag">出租屋</div>
+        <div class="panel-tag">物流公司</div>
+      </div>
+      <div class="panel-section">
+        <div class="panel-title">前情提要</div>
+        <div class="panel-card"><div class="panel-card-desc">陈默在送餐途中目击一起绑架事件，随后被不明人员追杀，勉强逃脱。</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 灵感建议浮层 -->
+<div class="inspire-panel" id="inspirePanel">
+  <div class="inspire-header">
+    <span class="inspire-title">💡 接下来可以怎么写？</span>
+    <button class="inspire-close" onclick="toggleInspire()">&times;</button>
+  </div>
+  <div class="inspire-hint">点击任意建议，将追加到骨架末尾（你可以修改）</div>
+  <div class="inspire-option" onclick="useSuggestion(this)">
+    <div class="inspire-option-text">陈默没有收下手机，而是通过快递盒上的物流单号反向追踪寄件地址，发现指向城郊一个废弃仓库。</div>
+    <span class="inspire-option-tag">推进调查</span>
+  </div>
+  <div class="inspire-option" onclick="useSuggestion(this)">
+    <div class="inspire-option-text">他把手机交给做IT的老同学分析，发现手机里除了转账记录，还有一段被删除但可恢复的通话录音。</div>
+    <span class="inspire-option-tag">引入盟友</span>
+  </div>
+  <div class="inspire-option" onclick="useSuggestion(this)">
+    <div class="inspire-option-text">第二天送餐时，他发现有人在跟踪自己。对方并不隐藏，似乎在观察他是否收了"补偿"后安分下来。</div>
+    <span class="inspire-option-tag">升级威胁</span>
+  </div>
+  <div class="inspire-option" onclick="useSuggestion(this)">
+    <div class="inspire-option-text">陈默在新闻里看到周远的物流公司刚中标了一个政府项目，他意识到这件事牵涉的层级可能比想象中高得多。</div>
+    <span class="inspire-option-tag">扩大格局</span>
+  </div>
+</div>
+
+<script>
+function toggleInspire() {
+  const panel = document.getElementById('inspirePanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+function useSuggestion(el) {
+  const text = el.querySelector('.inspire-option-text').textContent;
+  const editor = document.querySelector('.editor-text');
+  const p = document.createElement('p');
+  p.textContent = text;
+  p.style.color = '#6366f1';
+  editor.appendChild(p);
+  toggleInspire();
+}
+</script>
+
+</body>
+</html>
