@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 const WORKS = [
   { id: "1", title: "长安夜雨", type: "古风仙侠", time: "2小时前", color: "#6366f1", progress: "4/10", words: "28k字" },
@@ -88,12 +89,9 @@ export default function HomePage() {
             把脑中的画面变成文字，AI为你补齐笔力。
           </p>
           <div className="flex gap-3">
-            <button
-              onClick={() => window.location.href = "/work/new"}
-              className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]"
-            >
+            <Link href="/work/new" className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
               新建作品
-            </button>
+            </Link>
             <button onClick={() => alert("从模板开始功能开发中")} className={`px-6 py-2.5 rounded-lg text-sm font-medium bg-transparent border ${theme === "retro" ? "border-[#00ff88] text-[#00ff88]" : theme === "glass" ? "border-white/30 text-white/70" : "border-gray-300 text-gray-700"}`}>
               从模板开始
             </button>
@@ -108,9 +106,9 @@ export default function HomePage() {
           </div>
           <div className={theme === "clay" ? "bg-[#ece8e3] rounded-xl px-5 py-2 shadow-inner" : ""}>
             {WORKS.map((work) => (
-              <button
+              <Link
                 key={work.id}
-                onClick={() => window.location.href = "/work/id"}
+                href="/work/id"
                 className="w-full flex items-center py-4 border-b hover:opacity-80 transition-opacity"
                 style={{ borderColor: theme === "minimal" ? "#f5f5f5" : theme === "clay" ? "#d9d4ce" : theme === "retro" ? "#1a3a2a" : "rgba(255,255,255,0.06)" }}
               >
@@ -125,7 +123,7 @@ export default function HomePage() {
                   <div className="text-sm font-semibold">{work.progress}</div>
                   <div className={`text-xs ${theme === "glass" ? "opacity-60" : "opacity-40"}`}>{work.words}</div>
                 </div>
-              </button>
+              </Link>
             ))}
           </div>
         </div>

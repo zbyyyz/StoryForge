@@ -13,6 +13,7 @@ interface WorldSection {
   id: string;
   title: string;
   content: string;
+  isOpen: boolean;
 }
 
 const INITIAL_WORLDVIEW: WorldView = {
@@ -23,29 +24,23 @@ const INITIAL_WORLDVIEW: WorldView = {
 };
 
 const INITIAL_SECTIONS: WorldSection[] = [
-  { id: "时空背景", title: "时空背景", content: "2020年代的现代都市，某二线城市。科技水平与现实相当，智能手机、网约车、外卖服务等互联网服务普及。" },
-  { id: "社会结构", title: "社会结构", content: "普通城市社会，有明显的贫富差距。富人区与贫民窟并存，物流公司、媒体机构、地下势力等各势力交织。" },
-  { id: "规则体系", title: "规则体系", content: "现实世界的法律体系，但地下势力有自己的一套规则。追杀、收买等手段常见。" },
-  { id: "历史事件", title: "历史事件", content: "半年前发生过一起引起关注的物流公司事故，涉及多名员工，公司低调处理。" },
+  { id: "时空背景", title: "时空背景", content: "2020年代的现代都市，某二线城市。科技水平与现实相当，智能手机、网约车、外卖服务等互联网服务普及。", isOpen: true },
+  { id: "社会结构", title: "社会结构", content: "普通城市社会，有明显的贫富差距。富人区与贫民窟并存，物流公司、媒体机构、地下势力等各势力交织。", isOpen: false },
+  { id: "规则体系", title: "规则体系", content: "现实世界的法律体系，但地下势力有自己的一套规则。追杀、收买等手段常见。", isOpen: false },
+  { id: "文化风俗", title: "文化风俗", content: "典型的现代都市文化，快节奏生活，注重效率。年轻人偏好外卖、网约车等便捷服务。", isOpen: false },
+  { id: "历史事件", title: "历史事件", content: "半年前发生过一起引起关注的物流公司事故，涉及多名员工，公司低调处理。", isOpen: true },
+  { id: "日常生活", title: "日常生活", content: "货币使用人民币。交通以地铁、网约车、电动车为主。通讯主要通过微信等即时通讯软件。", isOpen: false },
+  { id: "冲突与张力", title: "冲突与张力", content: "城市表面平静，但暗流涌动。地下势力与合法企业的勾结，正义与利益的冲突。", isOpen: false },
 ];
 
 export default function WorldViewPage() {
   const [worldview, setWorldview] = useState<WorldView>(INITIAL_WORLDVIEW);
   const [sections, setSections] = useState<WorldSection[]>(INITIAL_SECTIONS);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["时空背景", "社会结构"]));
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState("");
 
-  const toggleSection = (title: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(title)) {
-        newSet.delete(title);
-      } else {
-        newSet.add(title);
-      }
-      return newSet;
-    });
+  const toggleSection = (id: string) => {
+    setSections(sections.map(s => s.id === id ? { ...s, isOpen: !s.isOpen } : s));
   };
 
   const startEdit = (section: WorldSection) => {
@@ -116,6 +111,7 @@ export default function WorldViewPage() {
             {WORLD_TYPES.map((type) => (
               <button
                 key={type.id}
+                onClick={() => setWorldview({ ...worldview, type: type.id, name: type.name })}
                 className={`p-4 border rounded-xl text-center transition-all ${worldview.type === type.id ? "border-[#111] bg-gray-50" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"}`}
               >
                 <div className="text-2xl mb-2">{type.icon}</div>
@@ -149,14 +145,14 @@ export default function WorldViewPage() {
             {sections.map((section) => (
               <div key={section.id} className="border border-gray-200 rounded-xl overflow-hidden">
                 <button
-                  onClick={() => toggleSection(section.title)}
+                  onClick={() => toggleSection(section.id)}
                   className="w-full flex items-center justify-between px-5 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
                   <span className="text-sm font-medium">{section.title}</span>
-                  <span className={`transition-transform ${expandedSections.has(section.title) ? "rotate-180" : ""}`}>▼</span>
+                  <span className={`transition-transform ${section.isOpen ? "rotate-180" : ""}`}>▼</span>
                 </button>
 
-                {expandedSections.has(section.title) && (
+                {section.isOpen && (
                   <div className="px-5 py-4">
                     {editingSection === section.id ? (
                       <div>
@@ -186,6 +182,17 @@ export default function WorldViewPage() {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* 从收藏导入 */}
+        <div className="mt-10">
+          <div className="text-sm font-semibold text-gray-700 mb-3">从收藏导入</div>
+          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
+            <div className="text-gray-400 mb-2">暂无收藏的世界观</div>
+            <button className="text-sm text-gray-600 hover:text-gray-900">
+              去资产市场浏览 →
+            </button>
           </div>
         </div>
       </main>
