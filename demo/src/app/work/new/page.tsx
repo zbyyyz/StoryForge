@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const TYPE_OPTIONS = [
   { id: "urban", name: "现代都市", icon: "🏙" },
@@ -14,6 +15,7 @@ const TYPE_OPTIONS = [
 ];
 
 export default function NewWorkPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const [mode, setMode] = useState<"guided" | "advanced">("guided");
   const [selectedType, setSelectedType] = useState("urban");
@@ -21,8 +23,15 @@ export default function NewWorkPage() {
   const [workDesc, setWorkDesc] = useState("");
   const [storyOutline, setStoryOutline] = useState("");
   const [showAISuggestion, setShowAISuggestion] = useState(false);
-
-  const pages = ["page0", "page1", "page2", "page3", "pageAdv"];
+  const [suggestedChapters, setSuggestedChapters] = useState([
+    { title: "深夜订单", desc: "小陈接到一个异常的深夜订单，送往城市边缘的废弃仓库" },
+    { title: "目击", desc: "在仓库中意外目睹一场地下交易，被发现后仓皇逃离" },
+    { title: "追杀", desc: "小陈发现自己被跟踪，日常生活被打破，开始逃亡" },
+    { title: "线索", desc: "逃亡中偶然发现阴谋的更多线索，牵涉到一位知名政客" },
+    { title: "同盟", desc: "遇到调查记者林薇，两人决定联手揭露真相" },
+    { title: "真相", desc: "最终对决，真相大白，但小陈也为此付出了代价" },
+  ]);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
   const renderPage = () => {
     if (page === 0) {
@@ -219,26 +228,62 @@ export default function NewWorkPage() {
           {showAISuggestion && (
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
               <div className="text-xs text-gray-600 mb-3 flex items-center gap-1.5">
-                <span>✦</span> AI建议的章节划分（可调整）
+                <span>✦</span> AI建议的章节划分（点击编辑，可删除或新增）
               </div>
               <div className="space-y-0">
-                {[
-                  { num: "第一章", title: "深夜订单", desc: "小陈接到一个异常的深夜订单，送往城市边缘的废弃仓库" },
-                  { num: "第二章", title: "目击", desc: "在仓库中意外目睹一场地下交易，被发现后仓皇逃离" },
-                  { num: "第三章", title: "追杀", desc: "小陈发现自己被跟踪，日常生活被打破，开始逃亡" },
-                  { num: "第四章", title: "线索", desc: "逃亡中偶然发现阴谋的更多线索，牵涉到一位知名政客" },
-                  { num: "第五章", title: "同盟", desc: "遇到调查记者林薇，两人决定联手揭露真相" },
-                  { num: "第六章", title: "真相", desc: "最终对决，真相大白，但小陈也为此付出了代价" },
-                ].map((ch, i) => (
-                  <div key={i} className="flex items-baseline gap-2 py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-xs text-gray-400 min-w-10">{ch.num}</span>
-                    <div>
-                      <div className="text-sm text-gray-800">{ch.title}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{ch.desc}</div>
-                    </div>
+                {suggestedChapters.map((ch, i) => (
+                  <div key={i} className="group flex items-start gap-2 py-2.5 border-b border-gray-100 last:border-0">
+                    <span className="text-xs text-gray-400 min-w-12 pt-0.5 shrink-0">第{i + 1}章</span>
+                    {editingIdx === i ? (
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={ch.title}
+                          onChange={(e) => setSuggestedChapters(suggestedChapters.map((c, j) => j === i ? { ...c, title: e.target.value } : c))}
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-[#111]"
+                          placeholder="章节标题"
+                          autoFocus
+                        />
+                        <input
+                          type="text"
+                          value={ch.desc}
+                          onChange={(e) => setSuggestedChapters(suggestedChapters.map((c, j) => j === i ? { ...c, desc: e.target.value } : c))}
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-xs outline-none focus:border-[#111]"
+                          placeholder="章节简介"
+                        />
+                        <button
+                          onClick={() => setEditingIdx(null)}
+                          className="text-xs text-gray-500 hover:text-gray-800"
+                        >
+                          完成
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex-1 cursor-pointer" onClick={() => setEditingIdx(i)}>
+                        <div className="text-sm text-gray-800">{ch.title}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{ch.desc}</div>
+                      </div>
+                    )}
+                    {suggestedChapters.length > 1 && (
+                      <button
+                        onClick={() => setSuggestedChapters(suggestedChapters.filter((_, j) => j !== i))}
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 text-xs px-1.5 py-0.5 shrink-0 transition-opacity"
+                      >
+                        删除
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
+              <button
+                onClick={() => {
+                  setSuggestedChapters([...suggestedChapters, { title: "", desc: "" }]);
+                  setEditingIdx(suggestedChapters.length);
+                }}
+                className="mt-3 text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1"
+              >
+                <span>+</span> 新增章节
+              </button>
             </div>
           )}
 
@@ -246,7 +291,7 @@ export default function NewWorkPage() {
             <button onClick={() => setPage(2)} className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
               上一步
             </button>
-            <button onClick={() => window.location.href = "/work/id"} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
+            <button onClick={() => router.push("/work/id")} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
               确认，开始创作
             </button>
           </div>
@@ -313,7 +358,7 @@ export default function NewWorkPage() {
             <button onClick={() => setPage(0)} className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
               返回
             </button>
-            <button onClick={() => window.location.href = "/work/id"} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
+            <button onClick={() => router.push("/work/id")} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
               创建作品，开始创作
             </button>
           </div>

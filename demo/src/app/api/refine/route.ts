@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: process.env.DEEPSEEK_BASE_URL,
-});
+function getClient() {
+  if (!process.env.DEEPSEEK_API_KEY) {
+    throw new Error("DEEPSEEK_API_KEY 环境变量未配置");
+  }
+  return new OpenAI({
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    baseURL: process.env.DEEPSEEK_BASE_URL,
+  });
+}
 
 const ACTION_PROMPTS: Record<string, string> = {
   expand: "请将这段文字进一步展开，添加更多细节、描写和感官体验，使其更加丰满。",
@@ -13,16 +18,22 @@ const ACTION_PROMPTS: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  const { text, action, context } = await req.json();
+  try {
+    const client = getClient();
+    const { text, action, context, stylePrompt } = await req.json();
 
   const actionPrompt = ACTION_PROMPTS[action] || ACTION_PROMPTS.rewrite;
+
+  const styleInstruction = stylePrompt && stylePrompt.trim()
+    ? `\n4. 保持以下风格：${stylePrompt.trim()}`
+    : "";
 
   const systemPrompt = `你是一个专业的小说编辑助手。用户会给你一段已有的小说文本，你需要按照指令对其进行修改。
 
 规则：
 1. 只修改用户提供的这段文字，不要改变情节走向。
 2. 直接输出修改后的文字，不要加任何解释或标注。
-3. 保持与上下文风格一致。`;
+3. 保持与上下文风格一致。${styleInstruction}`;
 
   const userMessage = context
     ? `上下文：\n${context}\n\n需要修改的段落：\n${text}\n\n${actionPrompt}`
@@ -39,5 +50,9 @@ export async function POST(req: NextRequest) {
   });
 
   const result = response.choices[0]?.message?.content || "修改失败，请重试。";
-  return NextResponse.json({ content: result });
+    return NextResponse.json({ content: result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "修改失败，请重试。";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

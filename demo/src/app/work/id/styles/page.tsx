@@ -1,88 +1,149 @@
 "use client";
 
-import { useState } from "react";
-
-interface StylePreset {
-  id: string;
-  name: string;
-  description: string;
-  selected: boolean;
-}
-
-const BUILTIN_PRESETS: StylePreset[] = [
-  { id: "1", name: "金庸武侠", description: "古风、豪侠、江湖", selected: true },
-  { id: "2", name: "余华冷叙事", description: "克制、冷峻、现实", selected: false },
-  { id: "3", name: "日系轻小说", description: "轻松、对话多、二次元", selected: false },
-  { id: "4", name: "古风言情", description: "细腻、唯美、情感", selected: false },
-  { id: "5", name: "现代都市", description: "写实、生活化", selected: false },
-  { id: "6", name: "村上春树风", description: "孤独、意识流", selected: false },
-];
-
-const STYLE_PARAMS = [
-  {
-    id: "narrative",
-    label: "叙事视角",
-    options: ["第一人称", "第三人称限制", "第三人称全知"],
-    description: "选择故事的叙述角度和范围"
-  },
-  {
-    id: "tone",
-    label: "文风倾向",
-    options: ["简洁", "细腻", "华丽", "幽默", "严肃", "讽刺"],
-    description: "整体的语言风格和情感基调"
-  },
-  {
-    id: "detail",
-    label: "描写偏好",
-    options: ["心理描写", "环境描写", "动作描写", "对话为主", "细节铺陈"],
-    description: "偏重于哪种类型的描写"
-  },
-  {
-    id: "pace",
-    label: "节奏感",
-    options: ["紧凑", "适中", "舒缓", "缓慢"],
-    description: "叙事的快慢节奏"
-  },
-  {
-    id: "emotion",
-    label: "情感浓度",
-    options: ["克制", "适中", "浓烈", "激情"],
-    description: "情感表达的强烈程度"
-  },
-  {
-    id: "sensitivity",
-    label: "敏感内容尺度",
-    options: ["保守", "适中", "开放"],
-    description: "对暴力、性等内容的表现程度"
-  },
-];
+import { useState, useEffect } from "react";
+import {
+  StylePreset,
+  StyleParams,
+  STYLE_PARAM_OPTIONS,
+  getPresets,
+  getCustomPresets,
+  saveCustomPresets,
+  getActivePresetId,
+  setActivePresetId,
+} from "@/app/lib/style-presets";
 
 export default function StylesPage() {
-  const [presets, setPresets] = useState<StylePreset[]>(BUILTIN_PRESETS);
-  const [expandedPreset, setExpandedPreset] = useState<string | null>(null);
-  const [expandedParams, setExpandedParams] = useState(false);
-  const [selectedParams, setSelectedParams] = useState<Record<string, string>>({
-    narrative: "第三人称限制",
-    tone: "适中",
-    detail: "心理描写",
-    pace: "适中",
-    emotion: "克制",
-    sensitivity: "适中",
-  });
+  const [presets, setPresets] = useState<StylePreset[]>([]);
+  const [activeId, setActiveId] = useState<string>("");
+  const [editedPrompt, setEditedPrompt] = useState("");
+  const [editedParams, setEditedParams] = useState<StyleParams>({});
+  const [showParams, setShowParams] = useState(false);
+  const [showNewPreset, setShowNewPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
+  const [dirty, setDirty] = useState(false);
 
-  const togglePresetSelection = (id: string) => {
-    setPresets(presets.map(p => p.id === id ? { ...p, selected: !p.selected } : p));
+  useEffect(() => {
+    const all = getPresets();
+    setPresets(all);
+    const id = getActivePresetId();
+    setActiveId(id);
+    const active = all.find(p => p.id === id) || all[0];
+    if (active) {
+      setEditedPrompt(active.prompt);
+      setEditedParams(active.params);
+    }
+  }, []);
+
+  const activePreset = presets.find(p => p.id === activeId) || presets[0];
+
+  const handleSelectPreset = (id: string) => {
+    setActiveId(id);
+    setActivePresetId(id);
+    const preset = presets.find(p => p.id === id);
+    if (preset) {
+      setEditedPrompt(preset.prompt);
+      setEditedParams(preset.params);
+    }
+    setDirty(false);
   };
 
-  const togglePresetExpand = (id: string) => {
-    setExpandedPreset(expandedPreset === id ? null : id);
+  const handlePromptChange = (value: string) => {
+    setEditedPrompt(value);
+    setDirty(true);
   };
 
-  const handleParamChange = (paramId: string, value: string) => {
-    setSelectedParams({ ...selectedParams, [paramId]: value });
+  const handleParamChange = (key: keyof StyleParams, value: string) => {
+    setEditedParams({ ...editedParams, [key]: value });
+    setDirty(true);
   };
 
-  const selectedPreset = presets.find(p => p.selected);
+  const handleSave = () => {
+    if (!activePreset) return;
+
+    if (activePreset.builtin) {
+      const forked: StylePreset = {
+        id: String(Date.now()),
+        name: `${activePreset.name}（自定义）`,
+        description: activePreset.description,
+        prompt: editedPrompt,
+        params: editedParams,
+        builtin: false,
+      };
+      const customs = [...getCustomPresets(), forked];
+      saveCustomPresets(customs);
+      setActivePresetId(forked.id);
+      setActiveId(forked.id);
+      setPresets(getPresets());
+    } else {
+      const updated: StylePreset = { ...activePreset, prompt: editedPrompt, params: editedParams };
+      const customs = getCustomPresets().map(p => p.id === updated.id ? updated : p);
+      saveCustomPresets(customs);
+      setPresets(getPresets());
+    }
+    setDirty(false);
+  };
+
+  const handleSaveAsNew = () => {
+    const name = newPresetName.trim() || `自定义风格 ${Date.now()}`;
+    const newPreset: StylePreset = {
+      id: String(Date.now()),
+      name,
+      description: "自定义预设",
+      prompt: editedPrompt,
+      params: editedParams,
+      builtin: false,
+    };
+    const customs = [...getCustomPresets(), newPreset];
+    saveCustomPresets(customs);
+    setActivePresetId(newPreset.id);
+    setActiveId(newPreset.id);
+    setPresets(getPresets());
+    setShowNewPreset(false);
+    setNewPresetName("");
+    setDirty(false);
+  };
+
+  const handleReset = () => {
+    if (!activePreset) return;
+    setEditedPrompt(activePreset.prompt);
+    setEditedParams(activePreset.params);
+    setDirty(false);
+  };
+
+  const handleDelete = () => {
+    if (!activePreset || activePreset.builtin) return;
+    const customs = getCustomPresets().filter(p => p.id !== activePreset.id);
+    saveCustomPresets(customs);
+    const all = getPresets();
+    setPresets(all);
+    const first = all[0];
+    if (first) {
+      setActivePresetId(first.id);
+      setActiveId(first.id);
+      setEditedPrompt(first.prompt);
+      setEditedParams(first.params);
+    }
+    setDirty(false);
+  };
+
+  const handleCreateBlank = () => {
+    const blank: StylePreset = {
+      id: String(Date.now()),
+      name: "自定义风格",
+      description: "从零开始配置",
+      prompt: "",
+      params: {},
+      builtin: false,
+    };
+    const customs = [...getCustomPresets(), blank];
+    saveCustomPresets(customs);
+    setActivePresetId(blank.id);
+    setActiveId(blank.id);
+    setEditedPrompt("");
+    setEditedParams({});
+    setPresets(getPresets());
+    setDirty(false);
+  };
 
   return (
     <div className="flex min-h-screen bg-white text-[#111]">
@@ -114,109 +175,149 @@ export default function StylesPage() {
       <main className="flex-1 ml-[280px] px-10 py-10 max-w-[1000px]">
         <div className="mb-10">
           <h1 className="text-2xl font-bold mb-2">风格预设</h1>
-          <p className="text-sm text-gray-500">选择或自定义故事的写作风格</p>
+          <p className="text-sm text-gray-500">定义 AI 的写作风格——风格指令是控制输出的核心</p>
         </div>
 
-        {/* 当前选中的预设 */}
-        <div className="mb-10 p-5 bg-gray-50 rounded-xl border border-gray-200">
-          <div className="text-xs text-gray-400 mb-2">当前使用</div>
-          <div className="text-base font-semibold">{selectedPreset?.name || "未选择"}</div>
-          <div className="text-sm text-gray-600">{selectedPreset?.description}</div>
-        </div>
-
-        {/* 内置预设 */}
-        <div className="mb-10">
+        {/* 预设选择器 */}
+        <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-semibold text-gray-700">内置预设</div>
-            <button className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
-              + 新建预设
+            <div className="text-sm font-semibold text-gray-700">选择预设</div>
+            <button
+              onClick={handleCreateBlank}
+              className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50"
+            >
+              + 从零新建
             </button>
           </div>
-
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2">
             {presets.map((preset) => (
               <button
                 key={preset.id}
-                onClick={() => togglePresetSelection(preset.id)}
-                className={`px-3.5 py-1.5 rounded-full text-sm transition-all ${preset.selected ? "bg-[#111] text-white" : "border border-gray-200 hover:border-gray-400"}`}
+                onClick={() => handleSelectPreset(preset.id)}
+                className={`px-3.5 py-1.5 rounded-full text-sm transition-all ${
+                  activeId === preset.id
+                    ? "bg-[#111] text-white"
+                    : "border border-gray-200 hover:border-gray-400"
+                }`}
               >
                 {preset.name}
               </button>
             ))}
           </div>
+        </div>
 
-          {/* 预设详情（可展开） */}
-          {selectedPreset && (
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setExpandedParams(!expandedParams)}
-                className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
-              >
-                <span className="text-sm font-medium">预设详情</span>
-                <span className={`text-gray-400 transition-transform ${expandedParams ? "rotate-180" : ""}`}>▼</span>
-              </button>
+        {/* 风格指令编辑器（核心） */}
+        {activePreset && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-semibold text-gray-700">风格指令</div>
+              <div className="text-xs text-gray-400">此指令将直接发送给 AI 控制写作风格</div>
+            </div>
+            <textarea
+              value={editedPrompt}
+              onChange={(e) => handlePromptChange(e.target.value)}
+              placeholder="描述你想要的写作风格。例如：以简洁有力的语言写作，多用短句，避免华丽辞藻，注重画面感和节奏感……"
+              className="w-full px-4 py-4 border border-gray-200 rounded-xl text-sm leading-relaxed outline-none resize-y min-h-[160px] focus:border-[#111] transition-colors"
+            />
+            <div className="flex items-center justify-between mt-2">
+              <div className="text-xs text-gray-400">{editedPrompt.length} 字</div>
+              {activePreset.builtin && dirty && (
+                <div className="text-xs text-amber-600">编辑内置预设将另存为自定义副本</div>
+              )}
+            </div>
+          </div>
+        )}
 
-              {expandedParams && (
-                <div className="p-5 border-t border-gray-100">
-                  <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                    此预设参考{selectedPreset.name}风格，注重情节的跌宕起伏，人物性格鲜明，描写生动。语言流畅但不过于晦涩，适合{selectedPreset.name.replace(/[^一-龥]/g, '')}类题材。
-                  </p>
+        {/* 参数微调（折叠） */}
+        <div className="mb-8">
+          <button
+            onClick={() => setShowParams(!showParams)}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-3"
+          >
+            <span className={`transition-transform ${showParams ? "rotate-90" : ""}`}>▶</span>
+            <span className="font-medium">参数微调（可选补充）</span>
+            <span className="text-xs text-gray-400">在风格指令基础上附加结构化要求</span>
+          </button>
 
-                  <div className="border-t border-gray-100 pt-4 space-y-4">
-                    {STYLE_PARAMS.map((param) => (
-                      <div key={param.id}>
-                        <div className="text-xs text-gray-400 mb-2">{param.label}</div>
-                        <div className="text-xs text-gray-500 mb-2">{param.description}</div>
-                        <div className="flex flex-wrap gap-2">
-                          {param.options.map((opt) => (
-                            <button
-                              key={opt}
-                              onClick={() => handleParamChange(param.id, opt)}
-                              className={`px-3 py-1.5 text-xs border rounded-lg transition-all ${selectedParams[param.id] === opt ? "border-[#111] bg-gray-50 font-medium" : "border-gray-200 hover:border-gray-300"}`}
-                            >
-                              {opt}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+          {showParams && (
+            <div className="p-5 border border-gray-200 rounded-xl space-y-4">
+              {STYLE_PARAM_OPTIONS.map((param) => (
+                <div key={param.id}>
+                  <div className="text-xs text-gray-500 mb-2">{param.label}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {param.options.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => handleParamChange(param.id, opt)}
+                        className={`px-3 py-1.5 text-xs border rounded-lg transition-all ${
+                          editedParams[param.id] === opt
+                            ? "border-[#111] bg-gray-50 font-medium"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        {opt}
+                      </button>
                     ))}
                   </div>
-
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
-                    <button className="px-4 py-2 text-sm bg-[#111] text-white rounded-lg hover:bg-[#333]">
-                      保存修改
-                    </button>
-                    <button className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
-                      另存为新预设
-                    </button>
-                  </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>
 
-        {/* 从零自定义 */}
-        <div className="mb-10">
-          <div className="text-sm font-semibold text-gray-700 mb-3">从零自定义</div>
-          <div className="p-5 border border-dashed border-gray-300 rounded-xl text-center hover:border-gray-400 transition-colors">
-            <div className="text-gray-400 mb-2">从头配置风格参数</div>
-            <button className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50">
-              开始自定义
+        {/* 操作按钮 */}
+        <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+          <button
+            onClick={handleSave}
+            disabled={!dirty}
+            className="px-5 py-2 text-sm bg-[#111] text-white rounded-lg hover:bg-[#333] disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            保存
+          </button>
+          <button
+            onClick={() => setShowNewPreset(true)}
+            className="px-5 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            另存为新预设
+          </button>
+          {dirty && (
+            <button
+              onClick={handleReset}
+              className="px-5 py-2 text-sm text-gray-500 hover:text-gray-800"
+            >
+              撤销修改
             </button>
-          </div>
+          )}
+          {activePreset && !activePreset.builtin && (
+            <button
+              onClick={handleDelete}
+              className="px-5 py-2 text-sm text-red-500 hover:text-red-700 ml-auto"
+            >
+              删除预设
+            </button>
+          )}
         </div>
 
-        {/* 从收藏导入 */}
-        <div>
-          <div className="text-sm font-semibold text-gray-700 mb-3">从收藏导入</div>
-          <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
-            <div className="text-gray-400 mb-2">暂无收藏的预设</div>
-            <button className="text-sm text-gray-600 hover:text-gray-900">
-              去资产市场浏览 →
+        {/* 另存为弹窗 */}
+        {showNewPreset && (
+          <div className="mt-4 p-4 border border-gray-200 rounded-xl flex items-center gap-3">
+            <input
+              type="text"
+              value={newPresetName}
+              onChange={(e) => setNewPresetName(e.target.value)}
+              placeholder="新预设名称"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-[#111]"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter") handleSaveAsNew(); }}
+            />
+            <button onClick={handleSaveAsNew} className="px-4 py-2 text-sm bg-[#111] text-white rounded-lg hover:bg-[#333]">
+              确认
+            </button>
+            <button onClick={() => { setShowNewPreset(false); setNewPresetName(""); }} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+              取消
             </button>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: process.env.DEEPSEEK_BASE_URL,
-});
+function getClient() {
+  if (!process.env.DEEPSEEK_API_KEY) {
+    throw new Error("DEEPSEEK_API_KEY 环境变量未配置");
+  }
+  return new OpenAI({
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    baseURL: process.env.DEEPSEEK_BASE_URL,
+  });
+}
 
 const DETAIL_PROMPTS: Record<string, string> = {
   concise: "扩写时保持简练，重点突出动作和对话，少用修饰，节奏紧凑。扩写长度约为原文的2-3倍。",
@@ -67,10 +72,31 @@ const WORLD_TONE_PROMPTS: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  const { skeleton, detail, style, characters, worldType, dialogueStyle, endingType, storyFocus, pacePreference, sexuality, worldTone } = await req.json();
+  try {
+    const client = getClient();
+    const { skeleton, detail, style, stylePrompt, styleParams, characters, worldType, dialogueStyle, endingType, storyFocus, pacePreference, sexuality, worldTone } = await req.json();
 
   const detailPrompt = DETAIL_PROMPTS[detail] || DETAIL_PROMPTS.moderate;
-  const stylePrompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.modern;
+
+  // Priority: stylePrompt (from preset system) > style key (legacy)
+  let resolvedStylePrompt: string;
+  if (stylePrompt && stylePrompt.trim()) {
+    resolvedStylePrompt = `风格要求：${stylePrompt.trim()}`;
+    if (styleParams) {
+      const paramLines: string[] = [];
+      if (styleParams.narrative) paramLines.push(`叙事视角：${styleParams.narrative}`);
+      if (styleParams.tone) paramLines.push(`文风倾向：${styleParams.tone}`);
+      if (styleParams.detail) paramLines.push(`描写偏好：${styleParams.detail}`);
+      if (styleParams.pace) paramLines.push(`节奏感：${styleParams.pace}`);
+      if (styleParams.emotion) paramLines.push(`情感浓度：${styleParams.emotion}`);
+      if (styleParams.sensitivity) paramLines.push(`敏感内容尺度：${styleParams.sensitivity}`);
+      if (paramLines.length > 0) {
+        resolvedStylePrompt += `\n补充参数：${paramLines.join("；")}`;
+      }
+    }
+  } else {
+    resolvedStylePrompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.modern;
+  }
 
   // 故事级参数prompt
   const dialogueStylePrompt = dialogueStyle ? DIALOGUE_STYLE_PROMPTS[dialogueStyle] : "";
@@ -98,7 +124,7 @@ export async function POST(req: NextRequest) {
 
 规则：
 1. ${detailPrompt}
-2. ${stylePrompt}
+2. ${resolvedStylePrompt}
 3. 如果骨架中有完整的对话句（带引号、有语气感），尽量保留原句，在周围补充描写。
 4. 如果骨架中是概括性描述，则完全展开重写为具体场景。
 5. 保持情节走向与骨架一致，不要添加骨架中没有的重大情节。
@@ -115,5 +141,9 @@ export async function POST(req: NextRequest) {
   });
 
   const result = response.choices[0]?.message?.content || "扩写失败，请重试。";
-  return NextResponse.json({ content: result });
+    return NextResponse.json({ content: result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "扩写失败，请重试。";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

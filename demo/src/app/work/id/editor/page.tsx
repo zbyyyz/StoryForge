@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { getActivePreset } from "@/app/lib/style-presets";
 
 interface Chapter {
   id: string;
@@ -70,20 +71,52 @@ export default function EditorPage() {
   const [skeletonContent, setSkeletonContent] = useState(INITIAL_SKELETON);
   const [expandedContent, setExpandedContent] = useState(INITIAL_EXPANDED);
   const [detailLevel, setDetailLevel] = useState<"简洁" | "适中" | "细腻">("适中");
-  const [selectedStyle, setSelectedStyle] = useState("默认风格");
+  const [selectedStyle, setSelectedStyle] = useState("");
   const [showInspirePanel, setShowInspirePanel] = useState(false);
+  const [inspireSuggestions, setInspireSuggestions] = useState(INSPIRATION_SUGGESTIONS);
+  const [isInspireLoading, setIsInspireLoading] = useState(false);
   const [showRefineToolbar, setShowRefineToolbar] = useState(false);
   const [refineToolbarPosition, setRefineToolbarPosition] = useState({ x: 0, y: 0 });
   const [isRefining, setIsRefining] = useState(false);
+  const [isExpanding, setIsExpanding] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
 
-  const editorRef = useRef<HTMLDivElement>(null);
   const expandRef = useRef<HTMLDivElement>(null);
 
-  const handleExpand = () => {
-    // 模拟扩写效果
-    setExpandedContent(INITIAL_EXPANDED);
-    setViewMode("expanded");
-    setChapters(chapters.map(c => c.id === activeChapter ? { ...c, status: "expanded", words: "1,420字" } : c));
+  useEffect(() => {
+    const preset = getActivePreset();
+    if (preset) setSelectedStyle(preset.name);
+  }, []);
+
+  const DETAIL_MAP: Record<string, string> = { "简洁": "concise", "适中": "moderate", "细腻": "detailed" };
+
+  const handleExpand = async () => {
+    setIsExpanding(true);
+    try {
+      const activePreset = getActivePreset();
+      const res = await fetch("/api/expand", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          skeleton: skeletonContent,
+          detail: DETAIL_MAP[detailLevel] || "moderate",
+          stylePrompt: activePreset?.prompt || "",
+          styleParams: activePreset?.params || {},
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert(`扩写失败：${data.error}`);
+      } else {
+        setExpandedContent(data.content);
+        setViewMode("expanded");
+        setChapters(chapters.map(c => c.id === activeChapter ? { ...c, status: "expanded", words: `${data.content.length}字` } : c));
+      }
+    } catch {
+      alert("网络错误，扩写失败");
+    } finally {
+      setIsExpanding(false);
+    }
   };
 
   const handleViewModeChange = (mode: "skeleton" | "expanded") => {
@@ -97,6 +130,33 @@ export default function EditorPage() {
   const handleAddSuggestion = (suggestion: { text: string }) => {
     setSkeletonContent(prev => prev + "\n\n" + suggestion.text);
     setShowInspirePanel(false);
+  };
+
+  const handleInspire = async () => {
+    setShowInspirePanel(true);
+    setIsInspireLoading(true);
+    try {
+      const res = await fetch("/api/inspire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skeleton: skeletonContent, worldType: "现代都市" }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setInspireSuggestions(INSPIRATION_SUGGESTIONS);
+      } else {
+        const suggestions = (data.suggestions as string[]).map((text, i) => ({
+          id: String(i + 1),
+          text,
+          tag: ["走向A", "走向B", "走向C", "走向D"][i] || "建议",
+        }));
+        setInspireSuggestions(suggestions.length > 0 ? suggestions : INSPIRATION_SUGGESTIONS);
+      }
+    } catch {
+      setInspireSuggestions(INSPIRATION_SUGGESTIONS);
+    } finally {
+      setIsInspireLoading(false);
+    }
   };
 
   // 处理文字选中的浮动工具栏
@@ -115,6 +175,7 @@ export default function EditorPage() {
           x: rect.left + rect.width / 2 - 100,
           y: rect.top - 50 + window.scrollY
         });
+        setSelectedText(selection.toString().trim());
         setShowRefineToolbar(true);
       } else {
         setShowRefineToolbar(false);
@@ -125,17 +186,46 @@ export default function EditorPage() {
     return () => document.removeEventListener('mouseup', handleSelectionChange);
   }, [viewMode]);
 
-  const handleRefine = (action: string) => {
+  const handleRefine = async (action: string) => {
     setShowRefineToolbar(false);
+    if (!selectedText) return;
     setIsRefining(true);
-    // 模拟AI重写
-    setTimeout(() => setIsRefining(false), 2000);
+    try {
+      const activePreset = getActivePreset();
+      const res = await fetch("/api/refine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: selectedText, action, context: expandedContent, stylePrompt: activePreset?.prompt || "" }),
+      });
+      const data = await res.json();
+      if (!data.error && data.content) {
+        setExpandedContent(prev => prev.replace(selectedText, data.content));
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsRefining(false);
+      setSelectedText("");
+    }
   };
 
   const selectedChapter = chapters.find(c => c.id === activeChapter);
   const skeletonParagraphs = skeletonContent.split('\n\n').filter(p => p.trim());
   const expandedParagraphs = expandedContent.split('\n\n').filter(p => p.trim());
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [hoveredSide, setHoveredSide] = useState<"skeleton" | "expanded" | null>(null);
+
+  const getHighlightedRange = (side: "skeleton" | "expanded", idx: number) => {
+    if (hoveredIdx === null || hoveredSide === null) return false;
+    if (side === hoveredSide) return idx === hoveredIdx;
+    const srcLen = hoveredSide === "skeleton" ? skeletonParagraphs.length : expandedParagraphs.length;
+    const dstLen = side === "skeleton" ? skeletonParagraphs.length : expandedParagraphs.length;
+    if (srcLen === 0 || dstLen === 0) return false;
+    const ratio = dstLen / srcLen;
+    const start = Math.floor(hoveredIdx * ratio);
+    const end = Math.floor((hoveredIdx + 1) * ratio) - 1;
+    return idx >= start && idx <= Math.max(start, end);
+  };
 
   return (
     <div className="flex min-h-screen bg-white text-[#111]">
@@ -235,9 +325,9 @@ export default function EditorPage() {
                     key={idx}
                     data-idx={idx}
                     className="mb-4 leading-8 text-sm cursor-pointer transition-colors rounded px-1"
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                    style={{ background: hoveredIdx === idx ? '#e8f0fe' : 'transparent' }}
+                    onMouseEnter={() => { setHoveredIdx(idx); setHoveredSide("skeleton"); }}
+                    onMouseLeave={() => { setHoveredIdx(null); setHoveredSide(null); }}
+                    style={{ background: getHighlightedRange("skeleton", idx) ? '#e8f0fe' : 'transparent' }}
                   >
                     {para}
                   </p>
@@ -257,9 +347,9 @@ export default function EditorPage() {
                     key={idx}
                     data-idx={idx}
                     className="mb-4 leading-8 text-sm cursor-pointer transition-colors rounded px-1"
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                    style={{ background: hoveredIdx === idx ? '#e8f0fe' : 'transparent' }}
+                    onMouseEnter={() => { setHoveredIdx(idx); setHoveredSide("expanded"); }}
+                    onMouseLeave={() => { setHoveredIdx(null); setHoveredSide(null); }}
+                    style={{ background: getHighlightedRange("expanded", idx) ? '#e8f0fe' : 'transparent' }}
                   >
                     {para}
                   </p>
@@ -277,7 +367,6 @@ export default function EditorPage() {
                   <div className="max-w-[720px] mx-auto">
                     {viewMode === "skeleton" ? (
                       <textarea
-                        ref={editorRef}
                         value={skeletonContent}
                         onChange={(e) => setSkeletonContent(e.target.value)}
                         className="w-full min-h-[400px] text-base leading-loose text-gray-800 outline-none resize-none bg-transparent"
@@ -309,7 +398,7 @@ export default function EditorPage() {
                           {["简洁", "适中", "细腻"].map((level) => (
                             <button
                               key={level}
-                              onClick={() => setDetailLevel(level as any)}
+                              onClick={() => setDetailLevel(level as "简洁" | "适中" | "细腻")}
                               className={`px-2.5 py-1 text-xs border rounded-md transition-all ${detailLevel === level ? "bg-[#111] text-white border-[#111]" : "border-gray-200 text-gray-600"}`}
                             >
                               {level}
@@ -318,17 +407,14 @@ export default function EditorPage() {
                         </div>
                       </div>
 
-                      {/* 风格选择 */}
-                      <select
-                        value={selectedStyle}
-                        onChange={(e) => setSelectedStyle(e.target.value)}
-                        className="px-2.5 py-1 text-xs border border-gray-200 rounded-md text-gray-600 bg-white outline-none"
+                      {/* 风格显示 */}
+                      <a
+                        href="/work/id/styles"
+                        className="px-2.5 py-1 text-xs border border-gray-200 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-colors"
+                        title="点击前往风格设置"
                       >
-                        <option>默认风格</option>
-                        <option>余华冷叙事</option>
-                        <option>日系轻小说</option>
-                        <option>硬汉派推理</option>
-                      </select>
+                        {selectedStyle || "未设置风格"}
+                      </a>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3">
@@ -345,16 +431,17 @@ export default function EditorPage() {
                   {viewMode === "skeleton" && (
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => setShowInspirePanel(!showInspirePanel)}
+                        onClick={handleInspire}
                         className="px-5 py-2.5 rounded-lg text-sm font-medium border-2 border-[#111] text-[#111] hover:bg-gray-50 flex items-center gap-1.5"
                       >
                         💡 灵感
                       </button>
                       <button
                         onClick={handleExpand}
-                        className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]"
+                        disabled={isExpanding || !skeletonContent.trim()}
+                        className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        扩写本章
+                        {isExpanding ? "扩写中..." : "扩写本章"}
                       </button>
                     </div>
                   )}
@@ -407,18 +494,22 @@ export default function EditorPage() {
             </button>
           </div>
           <div className="text-xs text-gray-500 mb-3">点击任意建议，将追加到骨架末尾（你可以修改）</div>
-          <div className="space-y-2">
-            {INSPIRATION_SUGGESTIONS.map((suggestion) => (
-              <button
-                key={suggestion.id}
-                onClick={() => handleAddSuggestion(suggestion)}
-                className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-[#111] hover:bg-gray-50 transition-all"
-              >
-                <p className="text-sm leading-relaxed text-gray-800">{suggestion.text}</p>
-                <span className="inline-block mt-1.5 text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{suggestion.tag}</span>
-              </button>
-            ))}
-          </div>
+          {isInspireLoading ? (
+            <div className="text-center py-6 text-sm text-gray-400">正在生成建议...</div>
+          ) : (
+            <div className="space-y-2">
+              {inspireSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion.id}
+                  onClick={() => handleAddSuggestion(suggestion)}
+                  className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-[#111] hover:bg-gray-50 transition-all"
+                >
+                  <p className="text-sm leading-relaxed text-gray-800">{suggestion.text}</p>
+                  <span className="inline-block mt-1.5 text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{suggestion.tag}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

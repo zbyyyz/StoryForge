@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: process.env.DEEPSEEK_BASE_URL,
-});
+function getClient() {
+  if (!process.env.DEEPSEEK_API_KEY) {
+    throw new Error("DEEPSEEK_API_KEY 环境变量未配置");
+  }
+  return new OpenAI({
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    baseURL: process.env.DEEPSEEK_BASE_URL,
+  });
+}
 
 export async function POST(req: NextRequest) {
-  const { skeleton, characters, worldType, dialogueStyle, endingType, storyFocus, pacePreference, sexuality, worldTone } = await req.json();
+  try {
+    const client = getClient();
+    const { skeleton, characters, worldType, dialogueStyle, endingType, storyFocus, pacePreference, sexuality, worldTone } = await req.json();
 
   let contextInfo = "";
   if (skeleton) {
@@ -50,6 +57,10 @@ export async function POST(req: NextRequest) {
   });
 
   const result = response.choices[0]?.message?.content || "获取灵感失败，请重试。";
-  const suggestions = result.split("\n").filter((s) => s.trim());
-  return NextResponse.json({ suggestions });
+    const suggestions = result.split("\n").filter((s) => s.trim());
+    return NextResponse.json({ suggestions });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "获取灵感失败，请重试。";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

@@ -4,6 +4,93 @@
 
 ---
 
+## 2026-06-04 风格系统重构 + 全面 Bug 修复 + 模板功能
+
+### 核心重构：风格预设系统
+
+**问题**：原风格预设页面使用"参数标签拼风格"的方式，6个维度的有限选项无法区分"金庸武侠"与"余华冷叙事"等风格的本质差异。
+
+**新架构**：每个预设的核心是一段自然语言的 **style prompt**（风格指令），直接发送给 LLM 控制输出风格；参数标签作为补充微调。
+
+1. **新建共享模块 `src/app/lib/style-presets.ts`** ✅
+   - 类型定义：`StylePreset`（含 prompt 字段）、`StyleParams`
+   - 6个内置预设，每个包含 100+ 字的中文风格 prompt
+   - localStorage 读写工具函数（getPresets、getActivePreset、setActivePresetId 等）
+   - 数据流：风格页写 localStorage → 编辑器读取 → 发送 prompt 给 API
+
+2. **风格预设页面重写** ✅
+   - 以风格指令 textarea 为核心（取代原来的参数按钮为主）
+   - 选择预设 → 加载对应 prompt → 可直接编辑
+   - 编辑内置预设会自动 fork 为自定义副本
+   - 参数微调折叠在下方作为"可选补充"
+   - 支持：保存 / 另存为新预设 / 删除自定义预设 / 从零新建
+
+3. **编辑器页面更新** ✅
+   - 删除硬编码的 4 选项下拉选择器
+   - 改为从 localStorage 读取活跃预设名称（显示为可点击链接，跳转到风格页）
+   - `handleExpand` 发送 `stylePrompt` + `styleParams`
+   - `handleRefine` 发送 `stylePrompt`
+
+4. **API 更新** ✅
+   - `expand` API：优先使用 `stylePrompt`（用户自定义 prompt），回退到旧 `style` key；支持 `styleParams` 追加结构化指令
+   - `refine` API：接收可选 `stylePrompt`，追加到 system prompt
+
+### Bug 修复
+
+1. **根路由重定向修复** ✅
+   - 从客户端 `window.location.href` 改为服务端 `redirect("/home")`
+
+2. **API 路由崩溃修复** ✅
+   - expand / inspire / refine 三个 API 路由：引入懒初始化 `getClient()` + try-catch
+   - 解决 DeepSeek API Key 未配置时模块级崩溃问题
+
+3. **编辑器功能修复** ✅
+   - 扩写功能对接真实 API（原为纯前端占位）
+   - 灵感建议功能对接真实 API
+   - 局部微调功能对接真实 API
+   - 对照模式高亮改为比例映射算法（非 1:1 索引映射）
+
+4. **非功能按钮修复** ✅
+   - 新建作品页：AI 章节建议改为可交互（编辑/删除/新增）
+   - 世界观页："+ 新增分类"按钮添加完整交互
+   - 风格预设页："+ 新建预设"按钮添加完整交互
+   - 风格预设页："开始自定义"按钮添加功能
+   - 作品管理页：返回按钮使用 Link 组件
+
+5. **TypeScript / ESLint 修复** ✅
+   - 修复 `any` 类型断言
+   - 移除未使用的变量和函数
+
+### 新功能：故事模板
+
+1. **模板选择页面 `/templates`** ✅
+   - 6个预设故事模板：深夜骑手（都市悬疑）、消失的室友（校园悬疑）、断刀客（武侠）、404 Not Found（科幻言情）、深巷食堂（美食治愈）、重复的周三（奇幻悬疑）
+   - 选择后展示故事线和预设章节
+   - 点击"使用此模板开始创作"进入作品
+
+2. **首页"从模板开始"按钮** ✅
+   - 从 `alert` 占位改为跳转到 `/templates`
+
+### 环境配置
+
+- 新增 `.env.example` 文件说明所需环境变量
+- 新增 `.env.local` 配置（不提交到 git）
+
+### 页面清单更新
+
+| 页面 | 路径 | 状态 |
+|------|------|------|
+| 主页 | `/home` | ✅ |
+| 故事模板 | `/templates` | ✅ 新增 |
+| 新建作品 | `/work/new` | ✅ |
+| 作品管理总览 | `/work/id` | ✅ |
+| 角色库 | `/work/id/characters` | ✅ |
+| 世界观 | `/work/id/world` | ✅ |
+| 风格预设 | `/work/id/styles` | ✅ 重构 |
+| 创作工作区 | `/work/id/editor` | ✅ |
+
+---
+
 ## 2026-06-03 前端页面重构与原型实现
 
 ### 本次完成

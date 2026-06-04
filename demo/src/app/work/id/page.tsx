@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface Chapter {
   id: string;
@@ -57,7 +58,7 @@ export default function WorkManagePage() {
       {/* 左侧边栏 */}
       <aside className="w-[280px] border-r border-gray-100 flex flex-col h-screen fixed left-0 top-0">
         <div className="px-5 py-5 border-b border-gray-100">
-          <button onClick={() => window.location.href = "/home"} className="text-sm text-gray-500 hover:text-gray-900 mb-3 block">← 返回工作台</button>
+          <Link href="/home" className="text-sm text-gray-500 hover:text-gray-900 mb-3 block">← 返回工作台</Link>
           <div className="text-lg font-bold mb-1">城市边缘</div>
           <div className="text-xs text-gray-400">现代都市 · 悬疑推理</div>
         </div>

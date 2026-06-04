@@ -92,9 +92,9 @@ export default function HomePage() {
             <Link href="/work/new" className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
               新建作品
             </Link>
-            <button onClick={() => alert("从模板开始功能开发中")} className={`px-6 py-2.5 rounded-lg text-sm font-medium bg-transparent border ${theme === "retro" ? "border-[#00ff88] text-[#00ff88]" : theme === "glass" ? "border-white/30 text-white/70" : "border-gray-300 text-gray-700"}`}>
+            <Link href="/templates" className={`px-6 py-2.5 rounded-lg text-sm font-medium bg-transparent border ${theme === "retro" ? "border-[#00ff88] text-[#00ff88]" : theme === "glass" ? "border-white/30 text-white/70" : "border-gray-300 text-gray-700"}`}>
               从模板开始
-            </button>
+            </Link>
           </div>
         </div>
 

@@ -38,6 +38,8 @@ export default function WorldViewPage() {
   const [sections, setSections] = useState<WorldSection[]>(INITIAL_SECTIONS);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState("");
+  const [showAddSection, setShowAddSection] = useState(false);
+  const [newSectionTitle, setNewSectionTitle] = useState("");
 
   const toggleSection = (id: string) => {
     setSections(sections.map(s => s.id === id ? { ...s, isOpen: !s.isOpen } : s));
@@ -57,6 +59,21 @@ export default function WorldViewPage() {
 
   const cancelEdit = () => {
     setEditingSection(null);
+    setEditedContent("");
+  };
+
+  const handleAddSection = () => {
+    if (!newSectionTitle.trim()) return;
+    const newSection: WorldSection = {
+      id: newSectionTitle,
+      title: newSectionTitle,
+      content: "",
+      isOpen: true,
+    };
+    setSections([...sections, newSection]);
+    setNewSectionTitle("");
+    setShowAddSection(false);
+    setEditingSection(newSection.id);
     setEditedContent("");
   };
 
@@ -136,10 +153,30 @@ export default function WorldViewPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-semibold text-gray-700">详细设定</div>
-            <button className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
+            <button onClick={() => setShowAddSection(true)} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
               + 新增分类
             </button>
           </div>
+
+          {showAddSection && (
+            <div className="mb-3 flex items-center gap-2">
+              <input
+                type="text"
+                value={newSectionTitle}
+                onChange={(e) => setNewSectionTitle(e.target.value)}
+                placeholder="输入分类名称，如：魔法体系"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-[#111]"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === "Enter") handleAddSection(); }}
+              />
+              <button onClick={handleAddSection} disabled={!newSectionTitle.trim()} className="px-3 py-2 text-sm bg-[#111] text-white rounded-lg hover:bg-[#333] disabled:opacity-50">
+                添加
+              </button>
+              <button onClick={() => { setShowAddSection(false); setNewSectionTitle(""); }} className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                取消
+              </button>
+            </div>
+          )}
 
           <div className="space-y-2">
             {sections.map((section) => (
