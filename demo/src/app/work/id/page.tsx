@@ -1,16 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface Chapter {
   id: string;
+  workId?: string;
   title: string;
   status: "empty" | "skeleton" | "expanded" | "done";
   words: string;
 }
 
-const INITIAL_CHAPTERS: Chapter[] = [
+interface Work {
+  id: string;
+  title: string;
+  type: string;
+  desc?: string;
+  createdAt?: string;
+}
+
+function getLatestWork(): Work | null {
+  try {
+    const works = JSON.parse(localStorage.getItem("storyforge_works") || "[]");
+    return works[0] || null;
+  } catch { return null; }
+}
+
+function getChapters(workId: string): Chapter[] {
+  try {
+    const all = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
+    const workChapters = all.filter((c: Chapter) => c.workId === workId);
+    return workChapters.length > 0 ? workChapters : [];
+  } catch { return []; }
+}
+
+function getCharacterCount(workId: string): number {
+  try {
+    const all = JSON.parse(localStorage.getItem("storyforge_characters") || "[]");
+    return all.filter((c: { workId?: string }) => c.workId === workId).length;
+  } catch { return 0; }
+}
+
+const FALLBACK_CHAPTERS: Chapter[] = [
   { id: "1", title: "第一章：深夜订单", status: "done", words: "3,200字" },
   { id: "2", title: "第二章：目击", status: "done", words: "4,100字" },
   { id: "3", title: "第三章：追杀", status: "expanded", words: "2,800字" },
@@ -22,7 +53,23 @@ const INITIAL_CHAPTERS: Chapter[] = [
 export default function WorkManagePage() {
   const [showAddChapter, setShowAddChapter] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState("");
-  const [chapters, setChapters] = useState<Chapter[]>(INITIAL_CHAPTERS);
+  const [chapters, setChapters] = useState<Chapter[]>(FALLBACK_CHAPTERS);
+  const [work, setWork] = useState<Work | null>(null);
+  const [charCount, setCharCount] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const w = getLatestWork();
+    setWork(w);
+    if (w) {
+      const ch = getChapters(w.id);
+      setChapters(ch.length > 0 ? ch : FALLBACK_CHAPTERS);
+      setCharCount(getCharacterCount(w.id));
+    } else {
+      setChapters(FALLBACK_CHAPTERS);
+    }
+    setLoaded(true);
+  }, []);
 
   const navItems = [
     { id: "overview", label: "总览", icon: "🏠", href: "/work/id" },
@@ -33,25 +80,37 @@ export default function WorkManagePage() {
 
   const handleAddChapter = () => {
     if (!newChapterTitle.trim()) return;
-
-    const newId = String(chapters.length + 1);
     const newChapter: Chapter = {
-      id: newId,
+      id: String(Date.now()),
+      workId: work?.id,
       title: newChapterTitle,
       status: "empty",
       words: "未开始",
     };
-
-    setChapters([...chapters, newChapter]);
+    const updated = [...chapters, newChapter];
+    setChapters(updated);
+    // persist
+    if (work) {
+      const all = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
+      all.push(newChapter);
+      localStorage.setItem("storyforge_chapters", JSON.stringify(all));
+    }
     setNewChapterTitle("");
     setShowAddChapter(false);
   };
 
   const handleDeleteChapter = (id: string) => {
     if (confirm("确定要删除这个章节吗？")) {
-      setChapters(chapters.filter(c => c.id !== id));
+      const updated = chapters.filter(c => c.id !== id);
+      setChapters(updated);
+      if (work) {
+        const all = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
+        localStorage.setItem("storyforge_chapters", JSON.stringify(all.filter((c: Chapter) => c.id !== id)));
+      }
     }
   };
+
+  if (!loaded) return null;
 
   return (
     <div className="flex min-h-screen bg-white text-[#111]">
@@ -59,8 +118,8 @@ export default function WorkManagePage() {
       <aside className="w-[280px] border-r border-gray-100 flex flex-col h-screen fixed left-0 top-0">
         <div className="px-5 py-5 border-b border-gray-100">
           <Link href="/home" className="text-sm text-gray-500 hover:text-gray-900 mb-3 block">← 返回工作台</Link>
-          <div className="text-lg font-bold mb-1">城市边缘</div>
-          <div className="text-xs text-gray-400">现代都市 · 悬疑推理</div>
+          <div className="text-lg font-bold mb-1">{work?.title || "城市边缘"}</div>
+          <div className="text-xs text-gray-400">{work?.type || "现代都市"}</div>
         </div>
 
         <nav className="px-3 py-4 flex flex-col gap-1">
@@ -89,7 +148,7 @@ export default function WorkManagePage() {
                 }`} />
                 <div className="flex-1 min-w-0 text-left">
                   <div className="text-sm font-medium truncate">{chapter.title}</div>
-                  <div className="text-xs text-gray-400">{chapter.words}</div>
+                  <div className="text-xs text-gray-400">{chapter.words || "未开始"}</div>
                 </div>
                 {chapters.length > 1 && (
                   <button
@@ -146,8 +205,8 @@ export default function WorkManagePage() {
       {/* 主内容 - 总览 */}
       <main className="flex-1 ml-[280px] px-10 py-10 max-w-[800px]">
         <div className="mb-10">
-          <h1 className="text-2xl font-bold mb-2">城市边缘</h1>
-          <p className="text-sm text-gray-500">一个外卖骑手在送餐途中意外卷入一场城市阴谋</p>
+          <h1 className="text-2xl font-bold mb-2">{work?.title || "城市边缘"}</h1>
+          <p className="text-sm text-gray-500">{work?.desc || "一个外卖骑手在送餐途中意外卷入一场城市阴谋"}</p>
         </div>
 
         {/* 统计 */}
@@ -159,19 +218,15 @@ export default function WorkManagePage() {
           <div>
             <div className="text-xl font-bold">
               {chapters.reduce((sum, ch) => {
-                const match = ch.words.match(/\d+/);
+                const match = (ch.words || "").match(/\d+/);
                 return sum + (match ? parseInt(match[0]) : 0);
               }, 0).toLocaleString()}
             </div>
             <div className="text-xs text-gray-400 mt-0.5">总字数</div>
           </div>
           <div>
-            <div className="text-xl font-bold">3</div>
+            <div className="text-xl font-bold">{charCount}</div>
             <div className="text-xs text-gray-400 mt-0.5">角色</div>
-          </div>
-          <div>
-            <div className="text-xl font-bold">2天前</div>
-            <div className="text-xs text-gray-400 mt-0.5">最后编辑</div>
           </div>
         </div>
 
@@ -197,7 +252,7 @@ export default function WorkManagePage() {
           <div className="text-sm font-semibold mb-3">快捷操作</div>
           <div className="flex flex-wrap gap-2.5">
             <a href="/work/id/editor" className="flex items-center gap-1.5 px-4.5 py-2.5 border border-gray-200 rounded-lg text-sm hover:border-gray-300 hover:bg-gray-50">
-              <span>✏</span> 继续创作第四章
+              <span>✏</span> 继续创作
             </a>
             <a href="/work/id/characters" className="flex items-center gap-1.5 px-4.5 py-2.5 border border-gray-200 rounded-lg text-sm hover:border-gray-300 hover:bg-gray-50">
               <span>👥</span> 管理角色

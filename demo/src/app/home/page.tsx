@@ -1,12 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
-const WORKS = [
-  { id: "1", title: "长安夜雨", type: "古风仙侠", time: "2小时前", color: "#6366f1", progress: "4/10", words: "28k字" },
-  { id: "2", title: "城市边缘", type: "现代都市", time: "昨天", color: "#ec4899", progress: "9/12", words: "65k字" },
-  { id: "3", title: "量子迷途", type: "科幻未来", time: "3天前", color: "#06b6d4", progress: "2/15", words: "12k字" },
+interface Work {
+  id: string;
+  title: string;
+  type: string;
+  color: string;
+  createdAt: string;
+}
+
+const COLORS = ["#6366f1", "#ec4899", "#06b6d4", "#f59e0b", "#10b981", "#8b5cf6"];
+
+function getWorks(): Work[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem("storyforge_works") || "[]");
+  } catch { return []; }
+}
+
+function deleteFromStorage(key: string, workId: string) {
+  try {
+    const data = JSON.parse(localStorage.getItem(key) || "[]");
+    const filtered = data.filter((item: { workId?: string }) => item.workId !== workId);
+    localStorage.setItem(key, JSON.stringify(filtered));
+  } catch { /* ignore */ }
+}
+
+const DEMO_WORKS = [
+  { id: "demo-1", title: "城市边缘", type: "现代都市", time: "1天前", color: "#ec4899", progress: "3/6", words: "1k字" },
 ];
 
 const ASSETS = [
@@ -25,6 +48,48 @@ const THEMES = [
 export default function HomePage() {
   const [theme, setTheme] = useState("minimal");
   const [showThemePanel, setShowThemePanel] = useState(false);
+  const [works, setWorks] = useState<Work[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<Work | null>(null);
+  const [deleteOptions, setDeleteOptions] = useState({ chapters: true, characters: false, worldview: false, styles: false });
+
+  useEffect(() => { setWorks(getWorks()); }, []);
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    // Always delete the work itself
+    const remaining = works.filter(w => w.id !== deleteTarget.id);
+    localStorage.setItem("storyforge_works", JSON.stringify(remaining));
+    // Conditionally delete associated data
+    if (deleteOptions.chapters) deleteFromStorage("storyforge_chapters", deleteTarget.id);
+    if (deleteOptions.characters) deleteFromStorage("storyforge_characters", deleteTarget.id);
+    if (deleteOptions.worldview) {
+      try {
+        const wvs = JSON.parse(localStorage.getItem("storyforge_worldviews") || "[]");
+        localStorage.setItem("storyforge_worldviews", JSON.stringify(wvs.filter((w: { workId?: string }) => w.workId !== deleteTarget.id)));
+      } catch { /* ignore */ }
+    }
+    if (deleteOptions.styles) {
+      try {
+        const key = `storyforge_styles_${deleteTarget.id}`;
+        localStorage.removeItem(key);
+      } catch { /* ignore */ }
+    }
+    setWorks(remaining);
+    setDeleteTarget(null);
+    setDeleteOptions({ chapters: true, characters: false, worldview: false, styles: false });
+  };
+
+  const timeAgo = (dateStr: string) => {
+    if (!dateStr) return "";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "刚刚";
+    if (mins < 60) return `${mins}分钟前`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}小时前`;
+    const days = Math.floor(hours / 24);
+    return `${days}天前`;
+  };
 
   const themeClasses = {
     minimal: "bg-white text-[#111]",
@@ -105,7 +170,7 @@ export default function HomePage() {
             <button onClick={() => alert("全部作品功能开发中")} className="text-xs font-normal capitalize tracking-normal cursor-pointer">全部作品</button>
           </div>
           <div className={theme === "clay" ? "bg-[#ece8e3] rounded-xl px-5 py-2 shadow-inner" : ""}>
-            {WORKS.map((work) => (
+            {works.length === 0 && DEMO_WORKS.map((work) => (
               <Link
                 key={work.id}
                 href="/work/id"
@@ -115,15 +180,34 @@ export default function HomePage() {
                 <div className="w-1 h-10 rounded-sm mr-4" style={{ backgroundColor: work.color }} />
                 <div className="flex-1 text-left">
                   <div className="text-base font-semibold mb-1">{work.title}</div>
-                  <div className={`text-xs ${theme === "glass" ? "opacity-60" : "opacity-40"}`}>
-                    {work.type} · {work.time}
-                  </div>
+                  <div className={`text-xs ${theme === "glass" ? "opacity-60" : "opacity-40"}`}>{work.type} · {work.time}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-semibold">{work.progress}</div>
                   <div className={`text-xs ${theme === "glass" ? "opacity-60" : "opacity-40"}`}>{work.words}</div>
                 </div>
               </Link>
+            ))}
+            {works.map((work) => (
+              <div
+                key={work.id}
+                className="w-full flex items-center py-4 border-b hover:opacity-80 transition-opacity group"
+                style={{ borderColor: theme === "minimal" ? "#f5f5f5" : theme === "clay" ? "#d9d4ce" : theme === "retro" ? "#1a3a2a" : "rgba(255,255,255,0.06)" }}
+              >
+                <Link href={`/work/id`} className="flex items-center flex-1">
+                  <div className="w-1 h-10 rounded-sm mr-4" style={{ backgroundColor: work.color || COLORS[works.indexOf(work) % COLORS.length] }} />
+                  <div className="flex-1 text-left">
+                    <div className="text-base font-semibold mb-1">{work.title || "未命名作品"}</div>
+                    <div className={`text-xs ${theme === "glass" ? "opacity-60" : "opacity-40"}`}>{work.type || "未分类"} · {timeAgo(work.createdAt)}</div>
+                  </div>
+                </Link>
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget(work); }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-red-400 hover:text-red-600 px-3 py-1"
+                >
+                  删除
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -153,6 +237,38 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+
+        {/* 删除确认弹窗 */}
+        {deleteTarget && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setDeleteTarget(null)}>
+            <div className="bg-white rounded-2xl p-6 w-[400px] shadow-xl" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">删除「{deleteTarget.title || "未命名作品"}」</h3>
+              <p className="text-sm text-gray-500 mb-4">请选择要一并删除的关联数据：</p>
+              <div className="space-y-2 mb-6">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" checked={deleteOptions.chapters} onChange={e => setDeleteOptions({...deleteOptions, chapters: e.target.checked})} className="rounded" />
+                  章节内容
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" checked={deleteOptions.characters} onChange={e => setDeleteOptions({...deleteOptions, characters: e.target.checked})} className="rounded" />
+                  角色库
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" checked={deleteOptions.worldview} onChange={e => setDeleteOptions({...deleteOptions, worldview: e.target.checked})} className="rounded" />
+                  世界观
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" checked={deleteOptions.styles} onChange={e => setDeleteOptions({...deleteOptions, styles: e.target.checked})} className="rounded" />
+                  风格预设
+                </label>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">取消</button>
+                <button onClick={handleDelete} className="px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600">确认删除</button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

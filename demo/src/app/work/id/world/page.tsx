@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useWorkInfo } from "@/app/lib/use-work";
 
 interface WorldView {
   id: string;
@@ -34,6 +35,7 @@ const INITIAL_SECTIONS: WorldSection[] = [
 ];
 
 export default function WorldViewPage() {
+  const workInfo = useWorkInfo();
   const [worldview, setWorldview] = useState<WorldView>(INITIAL_WORLDVIEW);
   const [sections, setSections] = useState<WorldSection[]>(INITIAL_SECTIONS);
   const [editingSection, setEditingSection] = useState<string | null>(null);
@@ -94,8 +96,8 @@ export default function WorldViewPage() {
       <aside className="w-[280px] border-r border-gray-100 flex flex-col h-screen fixed left-0 top-0">
         <div className="px-5 py-5 border-b border-gray-100">
           <a href="/work/id" className="text-sm text-gray-500 hover:text-gray-900 mb-3 block">← 返回总览</a>
-          <div className="text-lg font-bold mb-1">城市边缘</div>
-          <div className="text-xs text-gray-400">现代都市 · 悬疑推理</div>
+          <div className="text-lg font-bold mb-1">{workInfo.title}</div>
+          <div className="text-xs text-gray-400">{workInfo.type}</div>
         </div>
 
         <nav className="px-3 py-4 flex flex-col gap-1">

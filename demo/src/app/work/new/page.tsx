@@ -33,6 +33,27 @@ export default function NewWorkPage() {
   ]);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
+  const createWork = () => {
+    const id = String(Date.now());
+    const typeName = TYPE_OPTIONS.find(t => t.id === selectedType)?.name || "自由创作";
+    const work = { id, title: workTitle || "未命名作品", type: typeName, desc: workDesc, color: "#6366f1", createdAt: new Date().toISOString() };
+    const existingWorks = JSON.parse(localStorage.getItem("storyforge_works") || "[]");
+    localStorage.setItem("storyforge_works", JSON.stringify([work, ...existingWorks]));
+
+    // Save chapters
+    const chaps = (showAISuggestion && suggestedChapters.length > 0 ? suggestedChapters : [{ title: "第一章", desc: "" }])
+      .map((ch, i) => ({ id: `${id}-ch-${i}`, workId: id, title: ch.title || `第${i+1}章`, status: "empty", words: "" }));
+    const existingChapters = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
+    localStorage.setItem("storyforge_chapters", JSON.stringify([...existingChapters, ...chaps]));
+
+    // Save worldview
+    const wv = { workId: id, type: typeName, description: workDesc };
+    const existingWv = JSON.parse(localStorage.getItem("storyforge_worldviews") || "[]");
+    localStorage.setItem("storyforge_worldviews", JSON.stringify([...existingWv, wv]));
+
+    router.push("/work/id");
+  };
+
   const renderPage = () => {
     if (page === 0) {
       // 模式选择
@@ -291,7 +312,7 @@ export default function NewWorkPage() {
             <button onClick={() => setPage(2)} className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
               上一步
             </button>
-            <button onClick={() => router.push("/work/id")} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
+            <button onClick={createWork} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
               确认，开始创作
             </button>
           </div>
@@ -358,7 +379,7 @@ export default function NewWorkPage() {
             <button onClick={() => setPage(0)} className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50">
               返回
             </button>
-            <button onClick={() => router.push("/work/id")} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
+            <button onClick={createWork} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
               创建作品，开始创作
             </button>
           </div>
@@ -371,7 +392,7 @@ export default function NewWorkPage() {
     <div className="min-h-screen bg-white text-[#111]">
       {/* 头部 */}
       <header className="px-10 py-5 flex items-center">
-        <button onClick={() => setPage(0)} className="text-sm text-gray-500 mr-4 hover:text-gray-900">
+        <button onClick={() => page === 0 ? router.push("/home") : setPage(0)} className="text-sm text-gray-500 mr-4 hover:text-gray-900">
           ← 返回
         </button>
         <span className="text-sm font-semibold">新建作品</span>

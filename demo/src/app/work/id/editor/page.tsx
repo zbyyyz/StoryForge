@@ -90,10 +90,29 @@ export default function EditorPage() {
 
   const DETAIL_MAP: Record<string, string> = { "简洁": "concise", "适中": "moderate", "细腻": "detailed" };
 
+  const getCharactersData = () => {
+    try {
+      const raw = localStorage.getItem("storyforge_characters");
+      if (!raw) return [];
+      return JSON.parse(raw).map((c: { name: string; description: string }) => ({ name: c.name, description: c.description }));
+    } catch { return []; }
+  };
+
+  const getWorldType = () => {
+    try {
+      const raw = localStorage.getItem("storyforge_worldview");
+      if (!raw) return "";
+      const wv = JSON.parse(raw);
+      return wv.description || wv.type || "";
+    } catch { return ""; }
+  };
+
   const handleExpand = async () => {
     setIsExpanding(true);
     try {
       const activePreset = getActivePreset();
+      const characters = getCharactersData();
+      const worldType = getWorldType();
       const res = await fetch("/api/expand", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -102,6 +121,8 @@ export default function EditorPage() {
           detail: DETAIL_MAP[detailLevel] || "moderate",
           stylePrompt: activePreset?.prompt || "",
           styleParams: activePreset?.params || {},
+          characters,
+          worldType,
         }),
       });
       const data = await res.json();
@@ -139,7 +160,7 @@ export default function EditorPage() {
       const res = await fetch("/api/inspire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skeleton: skeletonContent, worldType: "现代都市" }),
+        body: JSON.stringify({ skeleton: skeletonContent, worldType: getWorldType() || "现代都市", characters: getCharactersData() }),
       });
       const data = await res.json();
       if (data.error) {
