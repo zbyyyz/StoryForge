@@ -22,6 +22,11 @@ interface Work {
 function getLatestWork(): Work | null {
   try {
     const works = JSON.parse(localStorage.getItem("storyforge_works") || "[]");
+    const activeId = localStorage.getItem("storyforge_active_work");
+    if (activeId) {
+      const found = works.find((w: Work) => w.id === activeId);
+      if (found) return found;
+    }
     return works[0] || null;
   } catch { return null; }
 }
@@ -41,19 +46,12 @@ function getCharacterCount(workId: string): number {
   } catch { return 0; }
 }
 
-const FALLBACK_CHAPTERS: Chapter[] = [
-  { id: "1", title: "第一章：深夜订单", status: "done", words: "3,200字" },
-  { id: "2", title: "第二章：目击", status: "done", words: "4,100字" },
-  { id: "3", title: "第三章：追杀", status: "expanded", words: "2,800字" },
-  { id: "4", title: "第四章：线索", status: "skeleton", words: "骨架已写" },
-  { id: "5", title: "第五章：同盟", status: "empty", words: "未开始" },
-  { id: "6", title: "第六章：真相", status: "empty", words: "未开始" },
-];
+const FALLBACK_CHAPTERS: Chapter[] = [];
 
 export default function WorkManagePage() {
   const [showAddChapter, setShowAddChapter] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState("");
-  const [chapters, setChapters] = useState<Chapter[]>(FALLBACK_CHAPTERS);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [work, setWork] = useState<Work | null>(null);
   const [charCount, setCharCount] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -63,10 +61,8 @@ export default function WorkManagePage() {
     setWork(w);
     if (w) {
       const ch = getChapters(w.id);
-      setChapters(ch.length > 0 ? ch : FALLBACK_CHAPTERS);
+      setChapters(ch);
       setCharCount(getCharacterCount(w.id));
-    } else {
-      setChapters(FALLBACK_CHAPTERS);
     }
     setLoaded(true);
   }, []);

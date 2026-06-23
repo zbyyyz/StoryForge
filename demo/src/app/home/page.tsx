@@ -194,7 +194,7 @@ export default function HomePage() {
                 className="w-full flex items-center py-4 border-b hover:opacity-80 transition-opacity group"
                 style={{ borderColor: theme === "minimal" ? "#f5f5f5" : theme === "clay" ? "#d9d4ce" : theme === "retro" ? "#1a3a2a" : "rgba(255,255,255,0.06)" }}
               >
-                <Link href={`/work/id`} className="flex items-center flex-1">
+                <Link href={`/work/id`} onClick={() => localStorage.setItem("storyforge_active_work", work.id)} className="flex items-center flex-1">
                   <div className="w-1 h-10 rounded-sm mr-4" style={{ backgroundColor: work.color || COLORS[works.indexOf(work) % COLORS.length] }} />
                   <div className="flex-1 text-left">
                     <div className="text-base font-semibold mb-1">{work.title || "未命名作品"}</div>

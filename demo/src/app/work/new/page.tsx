@@ -39,6 +39,7 @@ export default function NewWorkPage() {
     const work = { id, title: workTitle || "未命名作品", type: typeName, desc: workDesc, color: "#6366f1", createdAt: new Date().toISOString() };
     const existingWorks = JSON.parse(localStorage.getItem("storyforge_works") || "[]");
     localStorage.setItem("storyforge_works", JSON.stringify([work, ...existingWorks]));
+    localStorage.setItem("storyforge_active_work", id);
 
     // Save chapters
     const chaps = (showAISuggestion && suggestedChapters.length > 0 ? suggestedChapters : [{ title: "第一章", desc: "" }])
