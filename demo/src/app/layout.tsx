@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AppInit } from "./app-init";
 
 export const metadata: Metadata = {
   title: "StoryForge - 创意到作品的转化器",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">{children}</body>
+      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
+        <AppInit />
+        {children}
+      </body>
     </html>
   );
 }

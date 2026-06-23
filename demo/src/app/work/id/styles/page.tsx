@@ -12,6 +12,7 @@ import {
   setActivePresetId,
 } from "@/app/lib/style-presets";
 import { useWorkInfo } from "@/app/lib/use-work";
+import { getActiveWork, attachStylePreset } from "@/app/lib/works";
 
 export default function StylesPage() {
   const workInfo = useWorkInfo();
@@ -27,7 +28,8 @@ export default function StylesPage() {
   useEffect(() => {
     const all = getPresets();
     setPresets(all);
-    const id = getActivePresetId();
+    const work = getActiveWork();
+    const id = work?.stylePresetId || getActivePresetId();
     setActiveId(id);
     const active = all.find(p => p.id === id) || all[0];
     if (active) {
@@ -41,6 +43,8 @@ export default function StylesPage() {
   const handleSelectPreset = (id: string) => {
     setActiveId(id);
     setActivePresetId(id);
+    const work = getActiveWork();
+    if (work) attachStylePreset(work.id, id);
     const preset = presets.find(p => p.id === id);
     if (preset) {
       setEditedPrompt(preset.prompt);

@@ -1,91 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWorkInfo } from "@/app/lib/use-work";
+import { getWorkCharacters, getActiveWork, attachCharacter, detachCharacter, forkCharacterToLocal, updateWork } from "@/app/lib/works";
+import { getCharacters, addCharacter, updateCharacter, deleteCharacter as deleteGlobalCharacter } from "@/app/lib/characters";
+import { Character } from "@/app/lib/types";
 
-interface Character {
-  id: string;
-  name: string;
-  description: string;
-  // 基本信息
-  gender?: string;
-  age?: string;
-  birthday?: string;
-  height?: string;
-  weight?: string;
-  language?: string;
-  // 身份背景
-  occupation?: string;
-  family?: string;
-  socialClass?: string;
-  education?: string;
-  // 外在形象
-  appearance?: string;
-  hair?: string;
-  clothing?: string;
-  taste?: string;
-  signatureItem?: string;
-  // 性格内在
-  personality?: string;
-  values?: string;
-  habits?: string;
-  fears?: string;
-  desires?: string;
-  // 说话方式
-  tone?: string;
-  catchphrase?: string;
-  wordChoice?: string;
-  rhythm?: string;
-  // 行为模式
-  actionStyle?: string;
-  socialStyle?: string;
-  conflictReaction?: string;
-  // 生活细节
-  residence?: string;
-  transport?: string;
-  schedule?: string;
-  hobbies?: string;
-  // 经历
-  experience?: string;
-}
-
-const INITIAL_CHARACTERS: Character[] = [
-  {
-    id: "1",
-    name: "陈默",
-    description: "外卖骑手，28岁，沉默寡言",
-    gender: "男",
-    age: "28",
-    birthday: "1996年3月15日",
-    height: "175cm",
-    weight: "65kg",
-    occupation: "外卖骑手",
-    personality: "沉默寡言、冷静、谨慎",
-    appearance: "身材瘦削，寸头，眼神警惕",
-    experience: "来自农村，高中毕业后进城打工，送了五年外卖"
-  },
-  {
-    id: "2",
-    name: "林薇",
-    description: "调查记者，32岁，聪明勇敢",
-    gender: "女",
-    age: "32",
-    birthday: "1992年8月22日",
-    height: "168cm",
-    occupation: "调查记者",
-    personality: "聪明、勇敢、有正义感",
-    appearance: "短发利落，眼神明亮",
-    experience: "新闻系毕业，做了五年调查记者"
-  },
-];
+const INITIAL_CHARACTERS: Character[] = [];
 
 export default function CharactersPage() {
   const workInfo = useWorkInfo();
-  const [characters, setCharacters] = useState<Character[]>(INITIAL_CHARACTERS);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [showAssetPicker, setShowAssetPicker] = useState(false);
+
+  const workId = getActiveWork()?.id || "";
+
+  useEffect(() => {
+    if (workId) setCharacters(getWorkCharacters(workId));
+  }, [workId]);
 
   const [characterForm, setCharacterForm] = useState<Partial<Character>>({
     name: "", description: "", gender: "", age: "", birthday: "", height: "", weight: "",
@@ -142,53 +78,49 @@ export default function CharactersPage() {
     if (!characterForm.name?.trim()) return;
 
     if (editingCharacter) {
-      setCharacters(characters.map(c => c.id === editingCharacter.id ? { ...c, ...characterForm } as Character : c));
+      // Check if it's a local character or global
+      const isLocal = editingCharacter.id.startsWith("local-");
+      if (isLocal) {
+        // Update in work's localCharacters
+        const work = getActiveWork();
+        if (work) {
+          const updated = work.localCharacters.map(c => c.id === editingCharacter.id ? { ...c, ...characterForm } as Character : c);
+          updateWork(work.id, { localCharacters: updated });
+        }
+      } else {
+        updateCharacter(editingCharacter.id, characterForm);
+      }
     } else {
-      const newChar: Character = {
-        id: String(Date.now()),
-        name: characterForm.name || "",
-        description: characterForm.description || "",
-        gender: characterForm.gender,
-        age: characterForm.age,
-        birthday: characterForm.birthday,
-        height: characterForm.height,
-        weight: characterForm.weight,
-        occupation: characterForm.occupation,
-        family: characterForm.family,
-        socialClass: characterForm.socialClass,
-        education: characterForm.education,
-        appearance: characterForm.appearance,
-        hair: characterForm.hair,
-        clothing: characterForm.clothing,
-        taste: characterForm.taste,
-        signatureItem: characterForm.signatureItem,
-        personality: characterForm.personality,
-        values: characterForm.values,
-        habits: characterForm.habits,
-        fears: characterForm.fears,
-        desires: characterForm.desires,
-        tone: characterForm.tone,
-        catchphrase: characterForm.catchphrase,
-        wordChoice: characterForm.wordChoice,
-        rhythm: characterForm.rhythm,
-        actionStyle: characterForm.actionStyle,
-        socialStyle: characterForm.socialStyle,
-        conflictReaction: characterForm.conflictReaction,
-        residence: characterForm.residence,
-        transport: characterForm.transport,
-        schedule: characterForm.schedule,
-        hobbies: characterForm.hobbies,
-        experience: characterForm.experience,
-      };
-      setCharacters([...characters, newChar]);
+      // Create new global character and attach to work
+      const newChar = addCharacter({ name: characterForm.name || "", description: characterForm.description || "", ...characterForm } as Omit<Character, "id" | "createdAt" | "updatedAt">);
+      if (workId) attachCharacter(workId, newChar.id);
     }
+    setCharacters(getWorkCharacters(workId));
     setShowModal(false);
   };
 
   const handleDelete = (id: string) => {
     if (confirm("确定要删除这个角色吗？")) {
-      setCharacters(characters.filter(c => c.id !== id));
+      const isLocal = id.startsWith("local-");
+      if (isLocal) {
+        const work = getActiveWork();
+        if (work) updateWork(work.id, { localCharacters: work.localCharacters.filter(c => c.id !== id) });
+      } else {
+        detachCharacter(workId, id);
+      }
+      setCharacters(getWorkCharacters(workId));
     }
+  };
+
+  const handleFork = (id: string) => {
+    forkCharacterToLocal(workId, id);
+    setCharacters(getWorkCharacters(workId));
+  };
+
+  const handleAttachExisting = (id: string) => {
+    attachCharacter(workId, id);
+    setCharacters(getWorkCharacters(workId));
+    setShowAssetPicker(false);
   };
 
   const renderBasicInfo = () => (
@@ -433,9 +365,14 @@ export default function CharactersPage() {
       <main className="flex-1 ml-[280px] px-10 py-10 max-w-[1000px]">
         <div className="flex items-center justify-between mb-10">
           <h1 className="text-2xl font-bold">角色库</h1>
-          <button onClick={openAdd} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
-            + 新增角色
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowAssetPicker(true)} className="px-5 py-2.5 rounded-lg text-sm font-medium border border-gray-300 hover:bg-gray-50">
+              从资产库添加
+            </button>
+            <button onClick={openAdd} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]">
+              + 新增角色
+            </button>
+          </div>
         </div>
 
         {characters.length === 0 ? (
@@ -453,10 +390,20 @@ export default function CharactersPage() {
                 {/* 角色卡片头部 */}
                 <div className="p-5 flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold mb-1">{char.name}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-semibold">{char.name}</h3>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${char.id.startsWith("local-") ? "bg-blue-50 text-blue-500" : "bg-gray-100 text-gray-400"}`}>
+                        {char.id.startsWith("local-") ? "独立" : "全局"}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-600">{char.description}</p>
                   </div>
                   <div className="flex gap-2">
+                    {!char.id.startsWith("local-") && (
+                      <button onClick={() => handleFork(char.id)} className="text-gray-400 hover:text-blue-500 text-sm px-2 py-1" title="创建独立副本">
+                        分叉
+                      </button>
+                    )}
                     <button onClick={() => openEdit(char)} className="text-gray-400 hover:text-gray-700 text-sm px-2 py-1">
                       编辑
                     </button>
@@ -696,6 +643,36 @@ export default function CharactersPage() {
               >
                 {editingCharacter ? "保存" : "创建"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 资产库选择器 */}
+      {showAssetPicker && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowAssetPicker(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold mb-4">从资产库添加角色</h3>
+            {(() => {
+              const work = getActiveWork();
+              const available = getCharacters().filter(c => !work?.characterIds.includes(c.id));
+              if (available.length === 0) return <p className="text-sm text-gray-500 py-4">资产库中没有可添加的角色</p>;
+              return (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {available.map(c => (
+                    <div key={c.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <div className="text-sm font-medium">{c.name}</div>
+                        <div className="text-xs text-gray-500">{c.description}</div>
+                      </div>
+                      <button onClick={() => handleAttachExisting(c.id)} className="text-xs px-3 py-1.5 bg-[#111] text-white rounded-md hover:bg-[#333]">添加</button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            <div className="flex justify-end mt-4">
+              <button onClick={() => setShowAssetPicker(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">关闭</button>
             </div>
           </div>
         </div>

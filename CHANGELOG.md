@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-06-23 全局资产库架构重构
+
+### 架构决策
+
+**问题**：角色、世界观、风格预设之前要么不持久化（纯内存硬编码），要么全局共享无法区分作品，无法跨书复用。
+
+**新架构**：角色/世界观/预设作为**全局资产**独立存在，每本书通过 ID 引用资产。可 fork 为书内独立副本，修改不影响原始资产。
+
+### 新建数据层模块
+
+1. **`lib/types.ts`** — 统一类型定义（Character, Worldview, Work, Chapter, WorldSection）
+2. **`lib/characters.ts`** — 全局角色 CRUD（getCharacters, addCharacter, updateCharacter, deleteCharacter）
+3. **`lib/worldviews.ts`** — 全局世界观 CRUD（含 section 管理）
+4. **`lib/works.ts`** — 作品管理 + 资产引用/分叉/解析
+5. **`lib/migration.ts`** — 旧数据格式自动迁移到新 schema
+
+### 页面改造
+
+6. **角色库页面** ✅ — 持久化到 localStorage，新增"从资产库添加"和"分叉为独立副本"
+7. **世界观页面** ✅ — 完全重写，支持创建/引用全局世界观/分叉
+8. **风格预设页面** ✅ — 选预设时绑定到当前作品的 stylePresetId
+9. **编辑器页面** ✅ — 通过 getWorkCharacters/getWorkWorldview/getWorkStylePreset 解析资产
+10. **新建作品** ✅ — 创建时初始化新 schema 字段，世界观存入全局库
+11. **首页删除** ✅ — 适配新 schema
+
+### Work 数据模型变更
+
+```
++ characterIds: string[]        // 引用的全局角色ID
++ worldviewId: string | null    // 引用的全局世界观ID
++ stylePresetId: string | null  // 绑定的风格预设ID
++ localCharacters: Character[]  // fork 的角色独立副本
++ localWorldview: Worldview | null // fork 的世界观独立副本
+```
+
+---
+
 ## 2026-06-10 数据动态化 + 删除作品 + AI真正读取设定
 
 ### 数据持久化与动态读取

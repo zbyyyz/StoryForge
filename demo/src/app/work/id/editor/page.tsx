@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { getActivePreset } from "@/app/lib/style-presets";
+import { getActiveWork, getWorkCharacters, getWorkWorldview, getWorkStylePreset } from "@/app/lib/works";
 
 interface Chapter {
   id: string;
@@ -91,26 +92,23 @@ export default function EditorPage() {
   const DETAIL_MAP: Record<string, string> = { "简洁": "concise", "适中": "moderate", "细腻": "detailed" };
 
   const getCharactersData = () => {
-    try {
-      const raw = localStorage.getItem("storyforge_characters");
-      if (!raw) return [];
-      return JSON.parse(raw).map((c: { name: string; description: string }) => ({ name: c.name, description: c.description }));
-    } catch { return []; }
+    const work = getActiveWork();
+    if (!work) return [];
+    return getWorkCharacters(work.id).map(c => ({ name: c.name, description: c.description }));
   };
 
   const getWorldType = () => {
-    try {
-      const raw = localStorage.getItem("storyforge_worldview");
-      if (!raw) return "";
-      const wv = JSON.parse(raw);
-      return wv.description || wv.type || "";
-    } catch { return ""; }
+    const work = getActiveWork();
+    if (!work) return "";
+    const wv = getWorkWorldview(work.id);
+    return wv?.description || wv?.type || "";
   };
 
   const handleExpand = async () => {
     setIsExpanding(true);
     try {
-      const activePreset = getActivePreset();
+      const work = getActiveWork();
+      const activePreset = work ? getWorkStylePreset(work.id) : getActivePreset();
       const characters = getCharactersData();
       const worldType = getWorldType();
       const res = await fetch("/api/expand", {

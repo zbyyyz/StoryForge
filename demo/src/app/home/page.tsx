@@ -56,22 +56,23 @@ export default function HomePage() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    // Always delete the work itself
     const remaining = works.filter(w => w.id !== deleteTarget.id);
     localStorage.setItem("storyforge_works", JSON.stringify(remaining));
-    // Conditionally delete associated data
     if (deleteOptions.chapters) deleteFromStorage("storyforge_chapters", deleteTarget.id);
-    if (deleteOptions.characters) deleteFromStorage("storyforge_characters", deleteTarget.id);
+    if (deleteOptions.characters) {
+      // Detach global characters (don't delete them from global store)
+      // Characters referenced by this work remain in global store for reuse
+    }
     if (deleteOptions.worldview) {
       try {
-        const wvs = JSON.parse(localStorage.getItem("storyforge_worldviews") || "[]");
-        localStorage.setItem("storyforge_worldviews", JSON.stringify(wvs.filter((w: { workId?: string }) => w.workId !== deleteTarget.id)));
-      } catch { /* ignore */ }
-    }
-    if (deleteOptions.styles) {
-      try {
-        const key = `storyforge_styles_${deleteTarget.id}`;
-        localStorage.removeItem(key);
+        // If work has worldviewId, delete from global worldviews
+        const raw = localStorage.getItem("storyforge_works");
+        const allWorks = raw ? JSON.parse(raw) : [];
+        const target = allWorks.find((w: { id: string }) => w.id === deleteTarget.id);
+        if (target?.worldviewId) {
+          const wvs = JSON.parse(localStorage.getItem("storyforge_worldviews") || "[]");
+          localStorage.setItem("storyforge_worldviews", JSON.stringify(wvs.filter((w: { id: string }) => w.id !== target.worldviewId)));
+        }
       } catch { /* ignore */ }
     }
     setWorks(remaining);

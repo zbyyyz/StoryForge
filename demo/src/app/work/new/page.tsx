@@ -36,7 +36,20 @@ export default function NewWorkPage() {
   const createWork = () => {
     const id = String(Date.now());
     const typeName = TYPE_OPTIONS.find(t => t.id === selectedType)?.name || "自由创作";
-    const work = { id, title: workTitle || "未命名作品", type: typeName, desc: workDesc, color: "#6366f1", createdAt: new Date().toISOString() };
+    const work = {
+      id, title: workTitle || "未命名作品", type: typeName, desc: workDesc,
+      color: "#6366f1", createdAt: new Date().toISOString(),
+      characterIds: [], worldviewId: null as string | null, stylePresetId: null, localCharacters: [], localWorldview: null,
+    };
+
+    // Create worldview in global store and link to work
+    const now = new Date().toISOString();
+    const wvId = `${id}-wv`;
+    const wv = { id: wvId, name: typeName, type: selectedType, description: workDesc || "", sections: [], createdAt: now, updatedAt: now };
+    const existingWv = JSON.parse(localStorage.getItem("storyforge_worldviews") || "[]");
+    localStorage.setItem("storyforge_worldviews", JSON.stringify([...existingWv, wv]));
+    work.worldviewId = wvId;
+
     const existingWorks = JSON.parse(localStorage.getItem("storyforge_works") || "[]");
     localStorage.setItem("storyforge_works", JSON.stringify([work, ...existingWorks]));
     localStorage.setItem("storyforge_active_work", id);
@@ -46,11 +59,6 @@ export default function NewWorkPage() {
       .map((ch, i) => ({ id: `${id}-ch-${i}`, workId: id, title: ch.title || `第${i+1}章`, status: "empty", words: "" }));
     const existingChapters = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
     localStorage.setItem("storyforge_chapters", JSON.stringify([...existingChapters, ...chaps]));
-
-    // Save worldview
-    const wv = { workId: id, type: typeName, description: workDesc };
-    const existingWv = JSON.parse(localStorage.getItem("storyforge_worldviews") || "[]");
-    localStorage.setItem("storyforge_worldviews", JSON.stringify([...existingWv, wv]));
 
     router.push("/work/id");
   };
