@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { getActivePreset } from "@/app/lib/style-presets";
 import { getActiveWork, getWorkCharacters, getWorkWorldview, getWorkStylePreset } from "@/app/lib/works";
+import { Work } from "@/app/lib/types";
 
 interface Chapter {
   id: string;
@@ -12,12 +13,7 @@ interface Chapter {
 }
 
 const INITIAL_CHAPTERS: Chapter[] = [
-  { id: "1", title: "第一章：深夜订单", status: "done", words: "3,200字" },
-  { id: "2", title: "第二章：目击", status: "done", words: "4,100字" },
-  { id: "3", title: "第三章：追杀", status: "expanded", words: "2,800字" },
-  { id: "4", title: "第四章：线索", status: "skeleton", words: "骨架已写" },
-  { id: "5", title: "第五章：同盟", status: "empty", words: "未开始" },
-  { id: "6", title: "第六章：真相", status: "empty", words: "未开始" },
+  { id: "1", title: "第一章", status: "skeleton", words: "骨架已写" },
 ];
 
 const INITIAL_SKELETON = `陈默回到出租屋，反复回想追杀过程中那个人喊出的名字——"周远"。他打开手机搜索，发现周远是本市一家物流公司的老板，三个月前因为一起交通事故上过本地新闻。
@@ -66,11 +62,12 @@ const INSPIRATION_SUGGESTIONS = [
 ];
 
 export default function EditorPage() {
-  const [activeChapter, setActiveChapter] = useState("4");
+  const [work, setWork] = useState<Work | null>(null);
+  const [activeChapter, setActiveChapter] = useState("1");
   const [chapters, setChapters] = useState<Chapter[]>(INITIAL_CHAPTERS);
   const [viewMode, setViewMode] = useState<"skeleton" | "expanded" | "compare">("skeleton");
-  const [skeletonContent, setSkeletonContent] = useState(INITIAL_SKELETON);
-  const [expandedContent, setExpandedContent] = useState(INITIAL_EXPANDED);
+  const [skeletonContent, setSkeletonContent] = useState("");
+  const [expandedContent, setExpandedContent] = useState("");
   const [detailLevel, setDetailLevel] = useState<"简洁" | "适中" | "细腻">("适中");
   const [selectedStyle, setSelectedStyle] = useState("");
   const [showInspirePanel, setShowInspirePanel] = useState(false);
@@ -85,20 +82,25 @@ export default function EditorPage() {
   const expandRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const preset = getActivePreset();
-    if (preset) setSelectedStyle(preset.name);
+    const w = getActiveWork();
+    setWork(w);
+    if (w) {
+      const preset = getWorkStylePreset(w.id);
+      if (preset) setSelectedStyle(preset.name);
+    } else {
+      const preset = getActivePreset();
+      if (preset) setSelectedStyle(preset.name);
+    }
   }, []);
 
   const DETAIL_MAP: Record<string, string> = { "简洁": "concise", "适中": "moderate", "细腻": "detailed" };
 
   const getCharactersData = () => {
-    const work = getActiveWork();
     if (!work) return [];
     return getWorkCharacters(work.id).map(c => ({ name: c.name, description: c.description }));
   };
 
   const getWorldType = () => {
-    const work = getActiveWork();
     if (!work) return "";
     const wv = getWorkWorldview(work.id);
     return wv?.description || wv?.type || "";
@@ -107,7 +109,6 @@ export default function EditorPage() {
   const handleExpand = async () => {
     setIsExpanding(true);
     try {
-      const work = getActiveWork();
       const activePreset = work ? getWorkStylePreset(work.id) : getActivePreset();
       const characters = getCharactersData();
       const worldType = getWorldType();
@@ -252,8 +253,8 @@ export default function EditorPage() {
       <aside className="w-[280px] border-r border-gray-100 flex flex-col h-screen fixed left-0 top-0">
         <div className="px-5 py-5 border-b border-gray-100">
           <a href="/work/id" className="text-sm text-gray-500 hover:text-gray-900 mb-3 block">← 返回总览</a>
-          <div className="text-lg font-bold mb-1">城市边缘</div>
-          <div className="text-xs text-gray-400">现代都市 · 悬疑推理</div>
+          <div className="text-lg font-bold mb-1">{work?.title || "未命名作品"}</div>
+          <div className="text-xs text-gray-400">{work?.type || ""}</div>
         </div>
 
         <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-300">章节</div>
@@ -475,27 +476,29 @@ export default function EditorPage() {
               <div className="w-[240px] border-l border-gray-100 p-5 overflow-y-auto">
                 <div className="mb-6">
                   <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-300 mb-3">本章角色</div>
-                  <div className="bg-gray-50 rounded-lg p-3 mb-2">
-                    <div className="text-sm font-medium mb-1">陈默</div>
-                    <div className="text-xs text-gray-500">外卖骑手，28岁，沉默寡言</div>
-                  </div>
+                  {work && getWorkCharacters(work.id).length > 0 ? (
+                    getWorkCharacters(work.id).map(c => (
+                      <div key={c.id} className="bg-gray-50 rounded-lg p-3 mb-2">
+                        <div className="text-sm font-medium mb-1">{c.name}</div>
+                        <div className="text-xs text-gray-500">{c.description}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-gray-400">暂无角色，前往角色库添加</div>
+                  )}
                 </div>
 
                 <div className="mb-6">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-300 mb-3">场景</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2.5 py-1 bg-gray-100 rounded-md text-xs text-gray-600">出租屋</span>
-                    <span className="px-2.5 py-1 bg-gray-100 rounded-md text-xs text-gray-600">物流公司</span>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-300 mb-3">前情提要</div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-600 leading-relaxed">
-                      陈默在送餐途中目击一起绑架事件，随后被不明人员追杀，勉强逃脱。
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-300 mb-3">世界观</div>
+                  {work && getWorkWorldview(work.id) ? (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-xs text-gray-600 leading-relaxed">
+                        {getWorkWorldview(work.id)?.description || getWorkWorldview(work.id)?.type || ""}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-xs text-gray-400">暂未设置世界观</div>
+                  )}
                 </div>
               </div>
             </div>

@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-06-24 编辑器动态数据修复 + Vercel 部署
+
+### 问题
+
+编辑器页面（创作工作区）的左侧章节列表和右侧设定面板硬编码了"城市边缘"的演示数据（陈默、出租屋、物流公司等），无论当前激活的是哪本书都显示相同内容。
+
+### 修复
+
+1. **左侧边栏** — 作品名和类型从 `getActiveWork()` 动态读取
+2. **右侧面板** — 角色从 `getWorkCharacters(work.id)` 读取，世界观从 `getWorkWorldview(work.id)` 读取
+3. **API 路由** — `getClient()` 延迟初始化，避免构建时因缺少环境变量报错
+
+### 部署
+
+- 项目已部署到 Vercel：https://demo-alpha-jet.vercel.app
+- 环境变量 `DEEPSEEK_API_KEY` 和 `DEEPSEEK_BASE_URL` 配置在 Vercel 后台
+
+---
+
 ## 2026-06-23 全局资产库架构重构
 
 ### 架构决策
