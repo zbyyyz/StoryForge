@@ -33,6 +33,10 @@ function getLatestWork(): Work | null {
 
 function getChapters(workId: string): Chapter[] {
   try {
+    // 新格式：按作品ID存储
+    const raw = localStorage.getItem(`storyforge_chapters_${workId}`);
+    if (raw) return JSON.parse(raw);
+    // 旧格式兼容
     const all = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
     const workChapters = all.filter((c: Chapter) => c.workId === workId);
     return workChapters.length > 0 ? workChapters : [];
@@ -135,7 +139,10 @@ export default function WorkManagePage() {
         <div className="flex-1 overflow-y-auto px-3 pb-3">
           {chapters.map((chapter) => (
             <div key={chapter.id} className="group">
-              <div className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors cursor-pointer hover:bg-gray-50">
+              <a
+                href="/work/id/editor"
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors cursor-pointer hover:bg-gray-50"
+              >
                 <div className={`w-2 h-2 rounded-full shrink-0 ${
                   chapter.status === "empty" ? "border border-gray-300"
                   : chapter.status === "skeleton" ? "bg-yellow-400"
@@ -148,13 +155,13 @@ export default function WorkManagePage() {
                 </div>
                 {chapters.length > 1 && (
                   <button
-                    onClick={() => handleDeleteChapter(chapter.id)}
+                    onClick={(e) => { e.preventDefault(); handleDeleteChapter(chapter.id); }}
                     className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 text-xs px-1"
                   >
                     ✕
                   </button>
                 )}
-              </div>
+              </a>
             </div>
           ))}
           <button onClick={() => setShowAddChapter(true)} className="w-full flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600">
