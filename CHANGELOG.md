@@ -15,6 +15,7 @@
 1. **左侧边栏** — 作品名和类型从 `getActiveWork()` 动态读取
 2. **右侧面板** — 角色从 `getWorkCharacters(work.id)` 读取，世界观从 `getWorkWorldview(work.id)` 读取
 3. **API 路由** — `getClient()` 延迟初始化，避免构建时因缺少环境变量报错
+4. **成文视图** — 新增「✓ 确认本章」按钮，点击后章节状态标记为已完成
 
 ### 部署
 
