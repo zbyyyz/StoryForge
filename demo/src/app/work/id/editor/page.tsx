@@ -12,59 +12,45 @@ interface Chapter {
   words: string;
 }
 
-const INITIAL_CHAPTERS: Chapter[] = [
-  { id: "1", title: "第一章", status: "skeleton", words: "骨架已写" },
-];
+// --- localStorage helpers ---
+function getStorageKey(workId: string, type: "chapters" | "skeleton" | "expanded", chapterId?: string) {
+  if (type === "chapters") return `storyforge_chapters_${workId}`;
+  return `storyforge_${type}_${workId}_${chapterId}`;
+}
 
-const INITIAL_SKELETON = `陈默回到出租屋，反复回想追杀过程中那个人喊出的名字——"周远"。他打开手机搜索，发现周远是本市一家物流公司的老板，三个月前因为一起交通事故上过本地新闻。
+function loadChapters(workId: string): Chapter[] {
+  try {
+    const raw = localStorage.getItem(getStorageKey(workId, "chapters"));
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [{ id: "1", title: "第一章", status: "empty", words: "未开始" }];
+}
 
-他犹豫要不要报警。但追杀他的人明显训练有素，如果对方有背景，报警可能反而暴露自己。他决定先自己查一查。
+function saveChapters(workId: string, chapters: Chapter[]) {
+  localStorage.setItem(getStorageKey(workId, "chapters"), JSON.stringify(chapters));
+}
 
-第二天送餐时，他特意绕路经过那家物流公司。公司外表普通，但他注意到停车场有几辆挂着外地牌照的黑色商务车。
+function loadContent(workId: string, chapterId: string, type: "skeleton" | "expanded"): string {
+  try {
+    return localStorage.getItem(getStorageKey(workId, type, chapterId)) || "";
+  } catch { return ""; }
+}
 
-晚上回家，门口放着一个没有署名的快递盒。打开后里面是一部新手机和一张纸条："别查了，这是你的补偿。"手机里预存了五万块的转账记录。`;
-
-const INITIAL_EXPANDED = `陈默把电动车停在楼下，摘下头盔时手还在微微发抖。他没有走正门，而是绕到侧面的消防通道，确认身后没有人跟着，才快步上了楼。
-
-出租屋里一片漆黑。他没有开灯，靠着门坐在地上，大口喘着气。窗外霓虹灯的光透过薄窗帘打进来，在对面墙上投下忽明忽暗的色块。
-
-那个名字在他脑子里反复回响——"周远"。追杀他的人在混乱中喊出的那两个字，像一把钥匙，指向某个他还看不清全貌的房间。
-
-他掏出手机，手指在搜索框里打下"周远"两个字。屏幕的蓝光照亮他紧绷的脸。搜索结果很快出来了：周远，四十三岁，鼎盛物流有限公司法人代表。三个月前，一辆挂着公司名的货车在城南高架发生追尾事故，司机当场死亡。新闻配图里，他穿着深色西装，表情平静得近乎冷漠。
-
-陈默盯着那张脸看了很久。这就是那些人要保护的人？一个物流公司老板，值得派出训练有素的打手灭口？
-
-他想过报警。但那些人的身手、那些人的装备、那些人追杀时的从容——这不是普通的黑社会。如果周远背后有更大的东西，报警可能只是把自己送到明面上。
-
-他决定先自己查。
-
-第二天中午，他接了一单送往城东工业区的外卖。他特意选了这一单——鼎盛物流的总部就在那片区域。骑车经过时，他放慢了速度。
-
-公司大楼外表普通，灰色的六层建筑，门口挂着褪色的招牌。但停车场里停着四辆黑色别克商务车，清一色的外地牌照，车窗贴着深色膜，看不见里面。
-
-一个物流公司，需要这么多外地来的商务车？
-
-晚上九点多，陈默拖着疲惫的身体回到出租屋。走到门口时，他停住了。门前的地垫上放着一个快递盒，没有寄件人信息，收件人写着"陈先生"。
-
-他蹲下来看了很久，没有马上碰它。最终他还是把盒子拿进了屋里，用水果刀小心地划开封条。
-
-里面是一部全新的手机，还有一张折叠的纸条。纸条上只有一行字，打印体，没有签名："别查了，这是你的补偿。"
-
-他打开手机。屏幕亮起来，没有锁屏密码。只有一条银行转账通知：收到转账50,000元。
-
-陈默握着手机坐在床边，很长时间没有动。五万块。这是他骑半年外卖才能挣到的数字。`;
+function saveContent(workId: string, chapterId: string, type: "skeleton" | "expanded", content: string) {
+  localStorage.setItem(getStorageKey(workId, type, chapterId), content);
+}
 
 const INSPIRATION_SUGGESTIONS = [
-  { id: "1", text: "陈默没有收下手机，而是通过快递盒上的物流单号反向追踪寄件地址，发现指向城郊一个废弃仓库。", tag: "推进调查" },
-  { id: "2", text: "他把手机交给做IT的老同学分析，发现手机里除了转账记录，还有一段被删除但可恢复的通话录音。", tag: "引入盟友" },
-  { id: "3", text: "第二天送餐时，他发现有人在跟踪自己。对方并不隐藏，似乎在观察他是否收了\"补偿\"后安分下来。", tag: "升级威胁" },
-  { id: "4", text: "陈默在新闻里看到周远的物流公司刚中标了一个政府项目，他意识到这件事牵涉的层级可能比想象中高得多。", tag: "扩大格局" },
+  { id: "1", text: "试试从另一个角色的视角来推进剧情。", tag: "视角切换" },
+  { id: "2", text: "加入一个意想不到的转折。", tag: "剧情反转" },
+  { id: "3", text: "深入展现主角内心的挣扎。", tag: "内心戏" },
+  { id: "4", text: "引入一个新的次要角色。", tag: "新角色" },
 ];
 
 export default function EditorPage() {
   const [work, setWork] = useState<Work | null>(null);
   const [activeChapter, setActiveChapter] = useState("1");
-  const [chapters, setChapters] = useState<Chapter[]>(INITIAL_CHAPTERS);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [viewMode, setViewMode] = useState<"skeleton" | "expanded" | "compare">("skeleton");
   const [skeletonContent, setSkeletonContent] = useState("");
   const [expandedContent, setExpandedContent] = useState("");
@@ -81,10 +67,19 @@ export default function EditorPage() {
 
   const expandRef = useRef<HTMLDivElement>(null);
 
+  // 初始化：加载作品和章节数据
   useEffect(() => {
     const w = getActiveWork();
     setWork(w);
     if (w) {
+      const loadedChapters = loadChapters(w.id);
+      setChapters(loadedChapters);
+      const firstChapter = loadedChapters[0];
+      if (firstChapter) {
+        setActiveChapter(firstChapter.id);
+        setSkeletonContent(loadContent(w.id, firstChapter.id, "skeleton"));
+        setExpandedContent(loadContent(w.id, firstChapter.id, "expanded"));
+      }
       const preset = getWorkStylePreset(w.id);
       if (preset) setSelectedStyle(preset.name);
     } else {
@@ -92,6 +87,53 @@ export default function EditorPage() {
       if (preset) setSelectedStyle(preset.name);
     }
   }, []);
+
+  // 切换章节时加载对应内容
+  const switchChapter = (chapterId: string) => {
+    if (!work) return;
+    // 先保存当前章节
+    saveContent(work.id, activeChapter, "skeleton", skeletonContent);
+    saveContent(work.id, activeChapter, "expanded", expandedContent);
+    // 加载新章节
+    setActiveChapter(chapterId);
+    setSkeletonContent(loadContent(work.id, chapterId, "skeleton"));
+    setExpandedContent(loadContent(work.id, chapterId, "expanded"));
+    const chapter = chapters.find(c => c.id === chapterId);
+    if (chapter?.status === "expanded" || chapter?.status === "done") {
+      setViewMode("expanded");
+    } else {
+      setViewMode("skeleton");
+    }
+  };
+
+  // 自动保存骨架内容
+  useEffect(() => {
+    if (!work) return;
+    const timer = setTimeout(() => {
+      saveContent(work.id, activeChapter, "skeleton", skeletonContent);
+      if (skeletonContent.trim() && chapters.find(c => c.id === activeChapter)?.status === "empty") {
+        const updated = chapters.map(c => c.id === activeChapter ? { ...c, status: "skeleton" as const, words: "骨架已写" } : c);
+        setChapters(updated);
+        saveChapters(work.id, updated);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [skeletonContent]);
+
+  // 自动保存成文内容
+  useEffect(() => {
+    if (!work || !expandedContent) return;
+    const timer = setTimeout(() => {
+      saveContent(work.id, activeChapter, "expanded", expandedContent);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [expandedContent]);
+
+  // 保存章节列表变更
+  useEffect(() => {
+    if (!work || chapters.length === 0) return;
+    saveChapters(work.id, chapters);
+  }, [chapters]);
 
   const DETAIL_MAP: Record<string, string> = { "简洁": "concise", "适中": "moderate", "细腻": "detailed" };
 
@@ -262,14 +304,7 @@ export default function EditorPage() {
           {chapters.map((chapter) => (
             <div
               key={chapter.id}
-              onClick={() => {
-                setActiveChapter(chapter.id);
-                if (chapter.status === "expanded" || chapter.status === "done") {
-                  setViewMode("expanded");
-                } else {
-                  setViewMode("skeleton");
-                }
-              }}
+              onClick={() => switchChapter(chapter.id)}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors cursor-pointer ${activeChapter === chapter.id ? "bg-gray-50" : "hover:bg-gray-50"}`}
             >
               <div className={`w-2 h-2 rounded-full shrink-0 ${
@@ -284,6 +319,20 @@ export default function EditorPage() {
               </div>
             </div>
           ))}
+          <button
+            onClick={() => {
+              if (!work) return;
+              const newId = String(Date.now());
+              const newChapter: Chapter = { id: newId, title: `第${chapters.length + 1}章`, status: "empty", words: "未开始" };
+              const updated = [...chapters, newChapter];
+              setChapters(updated);
+              saveChapters(work.id, updated);
+              switchChapter(newId);
+            }}
+            className="w-full mt-2 px-3 py-2 text-xs text-gray-400 hover:text-gray-600 border border-dashed border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+          >
+            + 新增章节
+          </button>
         </div>
       </aside>
 
