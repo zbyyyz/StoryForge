@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { STYLE_PARAM_OPTIONS, StyleParams, saveCustomPresets, getCustomPresets } from "@/app/lib/style-presets";
-import { addWorldview } from "@/app/lib/worldviews";
+import { STYLE_PARAM_OPTIONS, StyleParams, StylePreset, saveCustomPresets, getCustomPresets, getPresets } from "@/app/lib/style-presets";
+import { addWorldview, getWorldviews } from "@/app/lib/worldviews";
 
 const TYPE_OPTIONS = [
   { id: "urban", name: "现代都市", icon: "🏙" },
@@ -58,7 +58,8 @@ export default function NewWorkPage() {
   const [showWorldModal, setShowWorldModal] = useState(false);
   const [newWorldType, setNewWorldType] = useState("modern");
   const [newWorldDesc, setNewWorldDesc] = useState("");
-  const [createdWorldview, setCreatedWorldview] = useState<{id: string; name: string; desc: string} | null>(null);
+  const [selectedWorldviewId, setSelectedWorldviewId] = useState<string | null>(null);
+  const [showWorldPicker, setShowWorldPicker] = useState(false);
 
   const handleSaveStyle = () => {
     const name = newStyleName.trim() || `自定义风格 ${new Date().toLocaleTimeString()}`;
@@ -83,7 +84,7 @@ export default function NewWorkPage() {
   const handleSaveWorld = () => {
     const typeName = WORLD_TYPES.find(t => t.id === newWorldType)?.name || "自由创作";
     const wv = addWorldview({ name: typeName, type: newWorldType, description: newWorldDesc, sections: [] });
-    setCreatedWorldview({ id: wv.id, name: typeName, desc: newWorldDesc });
+    setSelectedWorldviewId(wv.id);
     setShowWorldModal(false);
     setNewWorldType("modern");
     setNewWorldDesc("");
@@ -101,8 +102,8 @@ export default function NewWorkPage() {
     };
 
     // Create worldview in global store and link to work
-    if (createdWorldview) {
-      work.worldviewId = createdWorldview.id;
+    if (selectedWorldviewId) {
+      work.worldviewId = selectedWorldviewId;
     } else {
       const now = new Date().toISOString();
       const wvId = `${id}-wv`;
@@ -294,12 +295,9 @@ export default function NewWorkPage() {
               <button onClick={() => setShowStyleModal(true)} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">+ 新建预设</button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {["金庸武侠", "余华冷叙事", "日系轻小说", "古风言情", "现代都市", "村上春树风"].map((s, i) => (
-                <button key={i} onClick={() => setSelectedStyle(s)} className={`px-3.5 py-1.5 border rounded-full text-sm transition-colors ${selectedStyle === s ? "border-[#111] bg-gray-100 font-medium" : "border-gray-200 hover:border-gray-400"}`}>{s}</button>
+              {getPresets().map((p) => (
+                <button key={p.id} onClick={() => setSelectedStyle(p.id)} className={`px-3.5 py-1.5 border rounded-full text-sm transition-colors ${selectedStyle === p.id ? "border-[#111] bg-gray-100 font-medium" : "border-gray-200 hover:border-gray-400"}`}>{p.name}</button>
               ))}
-              {selectedStyle && !["金庸武侠", "余华冷叙事", "日系轻小说", "古风言情", "现代都市", "村上春树风"].includes(selectedStyle) && (
-                <span className="px-3.5 py-1.5 border border-[#111] bg-gray-100 rounded-full text-sm font-medium">✓ 自定义预设</span>
-              )}
             </div>
           </div>
 
@@ -307,13 +305,26 @@ export default function NewWorkPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-gray-700">世界观设定</label>
-              <button onClick={() => setShowWorldModal(true)} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">+ 自定义世界观</button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowWorldPicker(!showWorldPicker)} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">选择已有</button>
+                <button onClick={() => setShowWorldModal(true)} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">+ 新建</button>
+              </div>
             </div>
-            {createdWorldview ? (
+            {showWorldPicker && (
+              <div className="mb-3 space-y-2">
+                {getWorldviews().map((wv) => (
+                  <button key={wv.id} onClick={() => { setSelectedWorldviewId(wv.id); setShowWorldPicker(false); }} className={`w-full text-left px-4 py-3 border rounded-xl text-sm transition-colors ${selectedWorldviewId === wv.id ? "border-[#111] bg-gray-50" : "border-gray-200 hover:border-gray-300"}`}>
+                    <div className="font-medium">{wv.name}</div>
+                    {wv.description && <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">{wv.description}</div>}
+                  </button>
+                ))}
+                {getWorldviews().length === 0 && <p className="text-xs text-gray-400 py-2">暂无已有世界观，点击「+ 新建」创建一个</p>}
+              </div>
+            )}
+            {selectedWorldviewId ? (
               <div className="px-4 py-3.5 border border-[#111] rounded-xl text-sm leading-relaxed bg-gray-50">
-                <div className="text-xs text-gray-500 mb-1">✓ 已创建</div>
-                <div className="font-medium">{createdWorldview.name}</div>
-                {createdWorldview.desc && <div className="text-gray-600 mt-1">{createdWorldview.desc}</div>}
+                <div className="text-xs text-gray-500 mb-1">✓ 已选择</div>
+                {(() => { const wv = getWorldviews().find(w => w.id === selectedWorldviewId); return wv ? <><div className="font-medium">{wv.name}</div>{wv.description && <div className="text-gray-600 mt-1">{wv.description}</div>}</> : null; })()}
               </div>
             ) : (
               <div className="px-4 py-3.5 border border-gray-200 rounded-xl text-sm text-gray-600 leading-relaxed">
