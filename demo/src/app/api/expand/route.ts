@@ -74,7 +74,7 @@ const WORLD_TONE_PROMPTS: Record<string, string> = {
 export async function POST(req: NextRequest) {
   try {
     const client = getClient();
-    const { skeleton, detail, style, stylePrompt, styleParams, characters, worldType, dialogueStyle, endingType, storyFocus, pacePreference, sexuality, worldTone } = await req.json();
+    const { skeleton, detail, style, stylePrompt, styleParams, sampleText, characters, worldType, dialogueStyle, endingType, storyFocus, pacePreference, sexuality, worldTone } = await req.json();
 
   const detailPrompt = DETAIL_PROMPTS[detail] || DETAIL_PROMPTS.moderate;
 
@@ -90,8 +90,21 @@ export async function POST(req: NextRequest) {
       if (styleParams.pace) paramLines.push(`节奏感：${styleParams.pace}`);
       if (styleParams.emotion) paramLines.push(`情感浓度：${styleParams.emotion}`);
       if (styleParams.sensitivity) paramLines.push(`敏感内容尺度：${styleParams.sensitivity}`);
+      // 精细参数
+      if (styleParams.sentenceLength) paramLines.push(`句子长度：${styleParams.sentenceLength}`);
+      if (styleParams.vocabulary) paramLines.push(`用词偏好：${styleParams.vocabulary}`);
+      if (styleParams.rhetoric) paramLines.push(`修辞手法：${styleParams.rhetoric}`);
+      if (styleParams.punctuation) paramLines.push(`标点习惯：${styleParams.punctuation}`);
+      if (styleParams.dialogueRatio) paramLines.push(`对话比例：${styleParams.dialogueRatio}`);
+      if (styleParams.descriptionPriority) paramLines.push(`描写优先级：${styleParams.descriptionPriority}`);
+      if (styleParams.innerMonologue) paramLines.push(`内心独白：${styleParams.innerMonologue}`);
+      if (styleParams.narratorComment) paramLines.push(`旁白评论：${styleParams.narratorComment}`);
+      if (styleParams.chapterOpening) paramLines.push(`开篇方式：${styleParams.chapterOpening}`);
+      if (styleParams.sceneTransition) paramLines.push(`转场风格：${styleParams.sceneTransition}`);
+      if (styleParams.chapterEnding) paramLines.push(`结尾方式：${styleParams.chapterEnding}`);
+      if (styleParams.chapterWordTarget) paramLines.push(`目标字数：${styleParams.chapterWordTarget}`);
       if (paramLines.length > 0) {
-        resolvedStylePrompt += `\n补充参数：${paramLines.join("；")}`;
+        resolvedStylePrompt += `\n精细参数：${paramLines.join("；")}`;
       }
     }
   } else {
@@ -120,6 +133,11 @@ export async function POST(req: NextRequest) {
     .join(" ");
   const storyParamsText = storyParams ? `\n7. 故事设定：${storyParams}` : "";
 
+  // 范文示例指令
+  const sampleTextInstruction = sampleText && sampleText.trim()
+    ? `\n8. 【重要】请严格模仿以下范文的语感、句式长度、描写密度和行文节奏来写作：\n---范文开始---\n${sampleText.trim()}\n---范文结束---`
+    : "";
+
   const systemPrompt = `你是一个专业的小说扩写助手。用户会给你一段故事骨架（粗略的梗概），你需要将其扩写为完整的、有文学质感的小说段落。
 
 规则：
@@ -128,7 +146,7 @@ export async function POST(req: NextRequest) {
 3. 如果骨架中有完整的对话句（带引号、有语气感），尽量保留原句，在周围补充描写。
 4. 如果骨架中是概括性描述，则完全展开重写为具体场景。
 5. 保持情节走向与骨架一致，不要添加骨架中没有的重大情节。
-6. 直接输出扩写后的正文，不要加任何解释或标注。${storyParamsText}${contextInfo}`;
+6. 直接输出扩写后的正文，不要加任何解释或标注。${storyParamsText}${sampleTextInstruction}${contextInfo}`;
 
   const response = await client.chat.completions.create({
     model: "deepseek-chat",

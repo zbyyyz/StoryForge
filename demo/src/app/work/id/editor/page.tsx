@@ -166,6 +166,7 @@ export default function EditorPage() {
           detail: DETAIL_MAP[detailLevel] || "moderate",
           stylePrompt: activePreset?.prompt || "",
           styleParams: activePreset?.params || {},
+          sampleText: activePreset?.sampleText || "",
           characters,
           worldType,
         }),
