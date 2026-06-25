@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Template {
   id: string;
@@ -71,7 +72,32 @@ const TEMPLATES: Template[] = [
 ];
 
 export default function TemplatesPage() {
+  const router = useRouter();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+
+  const handleUseTemplate = () => {
+    if (!selectedTemplate) return;
+    const id = String(Date.now());
+    const work = {
+      id, title: selectedTemplate.name, type: selectedTemplate.genre,
+      desc: selectedTemplate.description, color: "#6366f1",
+      createdAt: new Date().toISOString(),
+      characterIds: [], worldviewId: null, stylePresetId: null,
+      localCharacters: [], localWorldview: null,
+    };
+    const existingWorks = JSON.parse(localStorage.getItem("storyforge_works") || "[]");
+    localStorage.setItem("storyforge_works", JSON.stringify([work, ...existingWorks]));
+    localStorage.setItem("storyforge_active_work", id);
+
+    const chaps = selectedTemplate.chapters.map((title, i) => ({
+      id: `${id}-ch-${i}`, workId: id, title, status: "empty", words: "",
+    }));
+    const existingChapters = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
+    localStorage.setItem("storyforge_chapters", JSON.stringify([...existingChapters, ...chaps]));
+    localStorage.setItem(`storyforge_chapters_${id}`, JSON.stringify(chaps));
+
+    router.push("/work/id");
+  };
 
   return (
     <div className="min-h-screen bg-white text-[#111]">
@@ -136,12 +162,12 @@ export default function TemplatesPage() {
             </div>
 
             <div className="flex gap-3">
-              <Link
-                href="/work/id"
+              <button
+                onClick={handleUseTemplate}
                 className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333]"
               >
                 使用此模板开始创作
-              </Link>
+              </button>
               <button
                 onClick={() => setSelectedTemplate(null)}
                 className="px-6 py-2.5 rounded-lg text-sm font-medium border border-gray-300 text-gray-600 hover:bg-gray-50"
