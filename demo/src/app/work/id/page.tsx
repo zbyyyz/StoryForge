@@ -110,6 +110,26 @@ export default function WorkManagePage() {
     }
   };
 
+  const handleExport = () => {
+    if (!work) return;
+    const lines: string[] = [`# ${work.title}\n`];
+    chapters.forEach((ch) => {
+      lines.push(`## ${ch.title}\n`);
+      const expanded = localStorage.getItem(`storyforge_expanded_${work.id}_${ch.id}`) || "";
+      const skeleton = localStorage.getItem(`storyforge_skeleton_${work.id}_${ch.id}`) || "";
+      const content = expanded || skeleton;
+      if (content) lines.push(content + "\n");
+    });
+    const text = lines.join("\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${work.title}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!loaded) return null;
 
   return (
@@ -263,7 +283,7 @@ export default function WorkManagePage() {
             <a href="/work/id/world" className="flex items-center gap-1.5 px-4.5 py-2.5 border border-gray-200 rounded-lg text-sm hover:border-gray-300 hover:bg-gray-50">
               <span>🌍</span> 编辑世界观
             </a>
-            <button className="flex items-center gap-1.5 px-4.5 py-2.5 border border-gray-200 rounded-lg text-sm hover:border-gray-300 hover:bg-gray-50">
+            <button onClick={handleExport} className="flex items-center gap-1.5 px-4.5 py-2.5 border border-gray-200 rounded-lg text-sm hover:border-gray-300 hover:bg-gray-50">
               <span>↑</span> 导出全文
             </button>
           </div>
