@@ -136,10 +136,18 @@ export default function NewWorkPage() {
 
     // Save chapters
     const chaps = (showAISuggestion && suggestedChapters.length > 0 ? suggestedChapters : [{ title: "第一章", desc: "" }])
-      .map((ch, i) => ({ id: `${id}-ch-${i}`, workId: id, title: ch.title || `第${i+1}章`, status: "empty", words: "" }));
+      .map((ch, i) => ({ id: `${id}-ch-${i}`, workId: id, title: ch.title || `第${i+1}章`, status: ch.desc ? "skeleton" : "empty", words: ch.desc ? "骨架已写" : "" }));
     const existingChapters = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
     localStorage.setItem("storyforge_chapters", JSON.stringify([...existingChapters, ...chaps]));
     localStorage.setItem(`storyforge_chapters_${id}`, JSON.stringify(chaps));
+
+    // Save chapter descs as initial skeleton content
+    chaps.forEach((ch, i) => {
+      const desc = (showAISuggestion && suggestedChapters[i]?.desc) || "";
+      if (desc) {
+        localStorage.setItem(`storyforge_skeleton_${id}_${ch.id}`, desc);
+      }
+    });
 
     router.push("/work/id");
   };
@@ -269,16 +277,17 @@ export default function NewWorkPage() {
                       <div className="flex-1 space-y-2">
                         <input type="text" value={ch.title} onChange={(e) => setSuggestedChapters(suggestedChapters.map((c, j) => j === i ? { ...c, title: e.target.value } : c))} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-[#111]" placeholder="章节标题" autoFocus />
                         <input type="text" value={ch.desc} onChange={(e) => setSuggestedChapters(suggestedChapters.map((c, j) => j === i ? { ...c, desc: e.target.value } : c))} className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-xs outline-none focus:border-[#111]" placeholder="章节简介" />
-                        <button onClick={() => setEditingIdx(null)} className="text-xs text-gray-500 hover:text-gray-800">完成</button>
+                        <button onClick={() => setEditingIdx(null)} className="text-xs text-[#111] font-medium hover:text-gray-600">✓ 完成编辑</button>
                       </div>
                     ) : (
-                      <div className="flex-1 cursor-pointer" onClick={() => setEditingIdx(i)}>
-                        <div className="text-sm text-gray-800">{ch.title}</div>
+                      <div className="flex-1 cursor-pointer group/item" onClick={() => setEditingIdx(i)}>
+                        <div className="text-sm text-gray-800 font-medium">{ch.title}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{ch.desc}</div>
+                        <span className="text-xs text-gray-300 group-hover/item:text-gray-500 mt-1 inline-block">点击编辑</span>
                       </div>
                     )}
                     {suggestedChapters.length > 1 && (
-                      <button onClick={() => setSuggestedChapters(suggestedChapters.filter((_, j) => j !== i))} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 text-xs px-1.5 py-0.5 shrink-0 transition-opacity">删除</button>
+                      <button onClick={() => setSuggestedChapters(suggestedChapters.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-500 text-xs px-1.5 py-0.5 shrink-0">删除</button>
                     )}
                   </div>
                 ))}
