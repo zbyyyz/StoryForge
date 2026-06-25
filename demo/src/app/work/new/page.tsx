@@ -446,6 +446,7 @@ export default function NewWorkPage() {
               <p className="text-xs text-gray-400 mb-2">描述这个世界的核心设定：时代背景、社会结构、特殊规则等</p>
               <textarea value={newWorldDesc} onChange={(e) => setNewWorldDesc(e.target.value)} placeholder="例如：2030年的赛博朋克城市，企业取代政府统治社会，底层居民生活在永远照不到阳光的低层建筑中。科技高度发达但贫富分化极端，义体改造普及但黑市交易猖獗……" className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none resize-y min-h-[120px] focus:border-[#111]" />
             </div>
+            <p className="text-xs text-gray-400 mb-4">💡 创建后可在「世界观」页面添加详细设定条目（地理环境、势力分布、社会规则等）</p>
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button onClick={() => { setShowWorldModal(false); setNewWorldType("modern"); setNewWorldDesc(""); }} className="px-5 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">取消</button>
               <button onClick={handleSaveWorld} disabled={!newWorldDesc.trim()} className="px-5 py-2 text-sm bg-[#111] text-white rounded-lg hover:bg-[#333] disabled:opacity-30 disabled:cursor-not-allowed">保存世界观</button>
