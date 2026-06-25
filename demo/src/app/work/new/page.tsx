@@ -139,6 +139,7 @@ export default function NewWorkPage() {
       .map((ch, i) => ({ id: `${id}-ch-${i}`, workId: id, title: ch.title || `第${i+1}章`, status: "empty", words: "" }));
     const existingChapters = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
     localStorage.setItem("storyforge_chapters", JSON.stringify([...existingChapters, ...chaps]));
+    localStorage.setItem(`storyforge_chapters_${id}`, JSON.stringify(chaps));
 
     router.push("/work/id");
   };

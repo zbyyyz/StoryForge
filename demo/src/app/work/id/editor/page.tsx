@@ -22,6 +22,10 @@ function loadChapters(workId: string): Chapter[] {
   try {
     const raw = localStorage.getItem(getStorageKey(workId, "chapters"));
     if (raw) return JSON.parse(raw);
+    // 旧格式兼容
+    const all = JSON.parse(localStorage.getItem("storyforge_chapters") || "[]");
+    const workChapters = all.filter((c: { workId?: string }) => c.workId === workId);
+    if (workChapters.length > 0) return workChapters;
   } catch {}
   return [{ id: "1", title: "第一章", status: "empty", words: "未开始" }];
 }
