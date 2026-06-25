@@ -32,6 +32,10 @@ export default function NewWorkPage() {
     { title: "真相", desc: "最终对决，真相大白，但小陈也为此付出了代价" },
   ]);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
+  const [customStyle, setCustomStyle] = useState("");
+  const [showCustomStyle, setShowCustomStyle] = useState(false);
+  const [customWorldview, setCustomWorldview] = useState("");
+  const [showCustomWorldview, setShowCustomWorldview] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
   const createWork = () => {
@@ -40,13 +44,16 @@ export default function NewWorkPage() {
     const work = {
       id, title: workTitle || "未命名作品", type: typeName, desc: workDesc,
       color: "#6366f1", createdAt: new Date().toISOString(),
-      characterIds: [], worldviewId: null as string | null, stylePresetId: selectedStyle, localCharacters: [], localWorldview: null,
+      characterIds: [], worldviewId: null as string | null,
+      stylePresetId: showCustomStyle && customStyle ? null : selectedStyle,
+      customStylePrompt: showCustomStyle ? customStyle : null,
+      localCharacters: [], localWorldview: null,
     };
 
     // Create worldview in global store and link to work
     const now = new Date().toISOString();
     const wvId = `${id}-wv`;
-    const wv = { id: wvId, name: typeName, type: selectedType, description: workDesc || "", sections: [], createdAt: now, updatedAt: now };
+    const wv = { id: wvId, name: typeName, type: selectedType, description: showCustomWorldview && customWorldview ? customWorldview : (workDesc || ""), sections: [], createdAt: now, updatedAt: now };
     const existingWv = JSON.parse(localStorage.getItem("storyforge_worldviews") || "[]");
     localStorage.setItem("storyforge_worldviews", JSON.stringify([...existingWv, wv]));
     work.worldviewId = wvId;
@@ -359,30 +366,49 @@ export default function NewWorkPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-gray-700">风格预设</label>
-              <button onClick={() => router.push("/work/id/styles")} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
+              <button onClick={() => setShowCustomStyle(!showCustomStyle)} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
                 + 新建预设
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {["金庸武侠", "余华冷叙事", "日系轻小说", "古风言情", "现代都市", "村上春树风"].map((s, i) => (
-                <button key={i} onClick={() => setSelectedStyle(s)} className={`px-3.5 py-1.5 border rounded-full text-sm transition-colors ${selectedStyle === s ? "border-[#111] bg-gray-100 font-medium" : "border-gray-200 hover:border-gray-400"}`}>
+                <button key={i} onClick={() => { setSelectedStyle(s); setShowCustomStyle(false); }} className={`px-3.5 py-1.5 border rounded-full text-sm transition-colors ${selectedStyle === s && !showCustomStyle ? "border-[#111] bg-gray-100 font-medium" : "border-gray-200 hover:border-gray-400"}`}>
                   {s}
                 </button>
               ))}
             </div>
+            {showCustomStyle && (
+              <div className="mt-3">
+                <textarea
+                  value={customStyle}
+                  onChange={(e) => setCustomStyle(e.target.value)}
+                  placeholder="输入你的风格指令，例如：用轻松幽默的口吻，对话多，节奏明快，像日常轻小说"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none resize-y min-h-[80px] focus:border-[#111] transition-colors"
+                />
+              </div>
+            )}
           </div>
 
           <div className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-gray-700">世界观设定</label>
-              <button onClick={() => router.push("/work/id/world")} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
+              <button onClick={() => setShowCustomWorldview(!showCustomWorldview)} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
                 + 自定义世界观
               </button>
             </div>
-            <div className="px-4 py-3.5 border border-gray-200 rounded-xl text-sm text-gray-600 leading-relaxed">
-              <div className="text-xs text-gray-400 mb-1">当前选择</div>
-              武侠江湖 — 宋朝末年，朝廷腐败，江湖门派林立。武功体系以内力为基础，分为正邪两道。
-            </div>
+            {!showCustomWorldview ? (
+              <div className="px-4 py-3.5 border border-gray-200 rounded-xl text-sm text-gray-600 leading-relaxed">
+                <div className="text-xs text-gray-400 mb-1">当前选择</div>
+                武侠江湖 — 宋朝末年，朝廷腐败，江湖门派林立。武功体系以内力为基础，分为正邪两道。
+              </div>
+            ) : (
+              <textarea
+                value={customWorldview}
+                onChange={(e) => setCustomWorldview(e.target.value)}
+                placeholder="描述你的世界观设定，例如：近未来2045年，AI觉醒后人类社会分裂为拥抱AI的新城和拒绝AI的旧区……"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none resize-y min-h-[100px] focus:border-[#111] transition-colors"
+              />
+            )}
           </div>
 
           <div className="flex justify-between mt-12 pt-6 border-t border-gray-100">
