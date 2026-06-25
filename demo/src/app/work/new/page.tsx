@@ -416,6 +416,7 @@ export default function NewWorkPage() {
                 </div>
               )}
             </div>
+            <p className="text-xs text-gray-400 mb-4">💡 创建后可在「风格预设」页面进行更精细的调整（句式语言、内容比例、章节结构、范文示例等）</p>
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button onClick={() => { setShowStyleModal(false); setNewStyleName(""); setNewStylePrompt(""); setNewStyleParams({}); }} className="px-5 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">取消</button>
               <button onClick={handleSaveStyle} disabled={!newStylePrompt.trim()} className="px-5 py-2 text-sm bg-[#111] text-white rounded-lg hover:bg-[#333] disabled:opacity-30 disabled:cursor-not-allowed">保存预设</button>
