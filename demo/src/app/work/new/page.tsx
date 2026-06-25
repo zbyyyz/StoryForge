@@ -31,6 +31,7 @@ export default function NewWorkPage() {
     { title: "同盟", desc: "遇到调查记者林薇，两人决定联手揭露真相" },
     { title: "真相", desc: "最终对决，真相大白，但小陈也为此付出了代价" },
   ]);
+  const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
   const createWork = () => {
@@ -39,7 +40,7 @@ export default function NewWorkPage() {
     const work = {
       id, title: workTitle || "未命名作品", type: typeName, desc: workDesc,
       color: "#6366f1", createdAt: new Date().toISOString(),
-      characterIds: [], worldviewId: null as string | null, stylePresetId: null, localCharacters: [], localWorldview: null,
+      characterIds: [], worldviewId: null as string | null, stylePresetId: selectedStyle, localCharacters: [], localWorldview: null,
     };
 
     // Create worldview in global store and link to work
@@ -364,7 +365,7 @@ export default function NewWorkPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               {["金庸武侠", "余华冷叙事", "日系轻小说", "古风言情", "现代都市", "村上春树风"].map((s, i) => (
-                <button key={i} onClick={() => alert(`选择风格: ${s}`)} className="px-3.5 py-1.5 border border-gray-200 rounded-full text-sm hover:border-gray-400">
+                <button key={i} onClick={() => setSelectedStyle(s)} className={`px-3.5 py-1.5 border rounded-full text-sm transition-colors ${selectedStyle === s ? "border-[#111] bg-gray-100 font-medium" : "border-gray-200 hover:border-gray-400"}`}>
                   {s}
                 </button>
               ))}
