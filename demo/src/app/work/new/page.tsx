@@ -36,14 +36,8 @@ export default function NewWorkPage() {
   const [workDesc, setWorkDesc] = useState("");
   const [storyOutline, setStoryOutline] = useState("");
   const [showAISuggestion, setShowAISuggestion] = useState(false);
-  const [suggestedChapters, setSuggestedChapters] = useState([
-    { title: "深夜订单", desc: "小陈接到一个异常的深夜订单，送往城市边缘的废弃仓库" },
-    { title: "目击", desc: "在仓库中意外目睹一场地下交易，被发现后仓皇逃离" },
-    { title: "追杀", desc: "小陈发现自己被跟踪，日常生活被打破，开始逃亡" },
-    { title: "线索", desc: "逃亡中偶然发现阴谋的更多线索，牵涉到一位知名政客" },
-    { title: "同盟", desc: "遇到调查记者林薇，两人决定联手揭露真相" },
-    { title: "真相", desc: "最终对决，真相大白，但小陈也为此付出了代价" },
-  ]);
+  const [suggestedChapters, setSuggestedChapters] = useState<{title: string; desc: string}[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
@@ -88,6 +82,29 @@ export default function NewWorkPage() {
     setShowWorldModal(false);
     setNewWorldType("modern");
     setNewWorldDesc("");
+  };
+
+  const generateChapters = async () => {
+    setAiLoading(true);
+    setShowAISuggestion(true);
+    try {
+      const typeName = TYPE_OPTIONS.find(t => t.id === selectedType)?.name || "现代都市";
+      const res = await fetch("/api/plan-chapters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outline: storyOutline, type: typeName, title: workTitle, desc: workDesc }),
+      });
+      const data = await res.json();
+      if (data.chapters && data.chapters.length > 0) {
+        setSuggestedChapters(data.chapters);
+      } else {
+        setSuggestedChapters([{ title: "第一章", desc: "故事的开始" }]);
+      }
+    } catch {
+      setSuggestedChapters([{ title: "第一章", desc: "故事的开始" }]);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const createWork = () => {
@@ -238,11 +255,12 @@ export default function NewWorkPage() {
             <p className="text-xs text-gray-500 mb-2.5">大致描述你的故事从开始到结束的走向，AI会帮你建议章节划分。不写也可以直接开始。</p>
             <textarea value={storyOutline} onChange={(e) => setStoryOutline(e.target.value)} placeholder="例如：外卖骑手小陈在一次深夜送餐中，被送到一个废弃仓库。他目睹了一场交易，被人发现后开始被追杀……" className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none resize-y min-h-[120px] leading-relaxed focus:border-[#111] transition-colors" />
           </div>
-          <button onClick={() => setShowAISuggestion(true)} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333] mb-4">让AI帮我规划章节</button>
+          <button onClick={generateChapters} disabled={aiLoading} className="px-6 py-2.5 rounded-lg text-sm font-medium bg-[#111] text-white hover:bg-[#333] mb-4 disabled:opacity-50">{aiLoading ? "AI规划中..." : "让AI帮我规划章节"}</button>
           {showAISuggestion && (
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <div className="text-xs text-gray-600 mb-3 flex items-center gap-1.5"><span>✦</span> AI建议的章节划分（点击编辑，可删除或新增）</div>
-              <div className="space-y-0">
+              <div className="text-xs text-gray-600 mb-3 flex items-center gap-1.5"><span>✦</span> {aiLoading ? "AI正在规划章节..." : "AI建议的章节划分（点击编辑，可删除或新增）"}</div>
+              {aiLoading && <div className="text-sm text-gray-400 py-4 text-center">正在生成中，请稍候...</div>}
+              {!aiLoading && <div className="space-y-0">
                 {suggestedChapters.map((ch, i) => (
                   <div key={i} className="group flex items-start gap-2 py-2.5 border-b border-gray-100 last:border-0">
                     <span className="text-xs text-gray-400 min-w-12 pt-0.5 shrink-0">第{i + 1}章</span>
@@ -263,8 +281,8 @@ export default function NewWorkPage() {
                     )}
                   </div>
                 ))}
-              </div>
-              <button onClick={() => { setSuggestedChapters([...suggestedChapters, { title: "", desc: "" }]); setEditingIdx(suggestedChapters.length); }} className="mt-3 text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1"><span>+</span> 新增章节</button>
+              </div>}
+              {!aiLoading && <button onClick={() => { setSuggestedChapters([...suggestedChapters, { title: "", desc: "" }]); setEditingIdx(suggestedChapters.length); }} className="mt-3 text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1"><span>+</span> 新增章节</button>}
             </div>
           )}
           <div className="flex justify-between mt-12 pt-6 border-t border-gray-100">
