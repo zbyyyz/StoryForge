@@ -359,7 +359,7 @@ export default function NewWorkPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-gray-700">风格预设</label>
-              <button onClick={() => alert("新建预设功能开发中")} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
+              <button onClick={() => router.push("/work/id/styles")} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
                 + 新建预设
               </button>
             </div>
@@ -375,7 +375,7 @@ export default function NewWorkPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between mb-3">
               <label className="text-sm font-semibold text-gray-700">世界观设定</label>
-              <button onClick={() => alert("自定义世界观功能开发中")} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
+              <button onClick={() => router.push("/work/id/world")} className="text-xs text-gray-600 border border-gray-300 px-2.5 py-1 rounded-md hover:bg-gray-50">
                 + 自定义世界观
               </button>
             </div>
