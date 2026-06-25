@@ -4,6 +4,54 @@
 
 ---
 
+## 2026-06-25 [计划] 后端化改造——Supabase + 用户系统
+
+### 背景
+
+当前产品全部数据存储在 localStorage，技术深度不足：无数据库、无用户系统、换浏览器数据丢失。需要后端化改造使产品具备真实可用性。
+
+### 技术选型
+
+**Supabase**（PostgreSQL + Auth + RLS）
+
+选型理由：
+- 免费层足够（500MB数据库、50000 MAU）
+- 与 Next.js 天然兼容，无需自建后端
+- 内置 Auth 支持 GitHub/Google OAuth，无需自己实现
+- Row Level Security (RLS) 实现数据隔离，用户只能访问自己的数据
+
+### 实施计划
+
+**Phase 1：数据库Schema设计**
+- works 表（作品）
+- chapters 表（章节，关联 work）
+- worldviews 表（世界观）
+- style_presets 表（风格预设）
+- characters 表（角色）
+- 设计外键关系、RLS策略
+
+**Phase 2：Auth 用户系统**
+- 集成 Supabase Auth
+- 登录/注册页面（支持 GitHub OAuth）
+- 路由保护（未登录跳转登录页）
+
+**Phase 3：数据层迁移**
+- 将 localStorage 读写替换为 Supabase 客户端调用
+- 保留 localStorage 作为离线缓存/降级方案
+- 新用户首次登录时若本地有数据，提示上传到云端
+
+**Phase 4：部署与验证**
+- Supabase 项目配置环境变量到 Vercel
+- 端到端测试：注册→创建作品→跨设备访问
+
+### 不做的事
+
+- 不做自建后端（Express/Nest等），杀鸡用牛刀
+- 不做支付系统（MVP阶段）
+- 不做实时协作（超出scope）
+
+---
+
 ## 2026-06-25 世界观推荐条目模板
 
 ### 问题
