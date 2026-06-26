@@ -4,6 +4,26 @@
 
 ---
 
+## 2026-06-26 后端化改造完成——Supabase + Auth + 云端数据层
+
+### 实施内容
+
+1. **依赖安装** — `@supabase/supabase-js` + `@supabase/ssr`
+2. **数据库 Schema** — 6张表 + RLS行级安全：works, chapters, characters, worldviews, style_presets, work_characters
+3. **Auth系统** — Magic Link邮箱登录 + `/auth/callback` 回调 + middleware路由保护
+4. **数据层** — `supabase-data.ts` 完整实现所有实体的云端CRUD
+5. **部署配置** — Vercel环境变量配置完成，生产环境可连接Supabase
+
+### 架构决策
+
+- 保留localStorage作为未登录时的降级方案（"跳过登录"入口）
+- 新增 `supabase-data.ts` 作为独立云端数据层，页面可逐步切换
+- RLS策略确保用户数据隔离，anon key可安全暴露给前端
+- 角色详细字段以jsonb metadata存储，避免宽表问题
+- 世界观sections和预设params均以jsonb存储，保持灵活性
+
+---
+
 ## 2026-06-25 [计划] 后端化改造——Supabase + 用户系统
 
 ### 背景
